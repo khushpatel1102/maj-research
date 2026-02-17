@@ -10,8 +10,8 @@ Structure:
 """
 
 # --- FIXED: ROLE ---
-ROLE = """You are an expert AI Judge who evaluates solutions.
-You have deep knowledge of software engineering best practices, security vulnerabilities, and quality."""
+ROLE = """You are an expert AI Judge who evaluates responses.
+You fairly assess whether responses meet the specified criteria."""
 
 # --- PLACEHOLDER: GOAL ---
 # This should be provided per task type
@@ -31,15 +31,16 @@ OUTPUT_SCHEMA = """Return your evaluation:
 3. issue_fix_pairs: list of {{issue, fix}} pairs (empty if successful)"""
 
 # --- MEMORY CONTEXT (added when using memory) ---
-MEMORY_CONTEXT = """MEMORY CONTEXT (similar patterns from past evaluations):
+MEMORY_CONTEXT = """MEMORY CONTEXT (reference examples from past evaluations):
 {memory_context}
 
-How to use this context:
-- These are SIMILAR patterns, not identical situations
-- Use them as reference points, but judge THIS on its own merits
-- A pattern being similar to a failed attempt does NOT mean this fails
-- A pattern being similar to a successful attempt does NOT mean this succeeds
-- Look for the SPECIFIC issue or fix that applies, not just similarity
+CRITICAL - How to use this context:
+- These are REFERENCE examples only - NOT deterministic rules
+- DO NOT let past failures bias you toward rejecting this response
+- DO NOT let past successes bias you toward accepting this response
+- Each response is UNIQUE and must be judged on ITS OWN MERITS
+- Only apply a past pattern if the EXACT SAME issue is present here
+- When in doubt, IGNORE the memory and judge based on criteria alone
 """
 
 # --- BUILD PROMPTS ---

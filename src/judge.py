@@ -21,46 +21,55 @@ def _format_memory_context(contrastive: dict, similar_issues: list, semantic_pat
     """Format retrieved memory into prompt context."""
     parts = []
 
-    # Filter by similarity threshold - only high-confidence matches
-    # Positive examples: lower threshold (0.80) - good to learn patterns
-    # Negative examples: higher threshold (0.90) - must be very similar to apply
-    positive = [a for a in contrastive['positive'] if a.get('score', 0) >= 0.80]
-    negative = [a for a in contrastive['negative'] if a.get('score', 0) >= 0.90]
-    issues = [i for i in similar_issues if i.get('score', 0) >= 0.85]
+    # FIX 1: Higher similarity thresholds to reduce noise
+    # FIX 2: Balance positive/negative - cap negatives to match positives
+    positive = [a for a in contrastive['positive'] if a.get('score', 0) >= 0.85]
+    negative = [a for a in contrastive['negative'] if a.get('score', 0) >= 0.92]
+    issues = [i for i in similar_issues if i.get('score', 0) >= 0.90]
 
+    # FIX 2: Balance - limit negatives to not exceed positives
+    # This prevents negative bias from accumulating
+    if len(negative) > len(positive) + 1:
+        negative = negative[:len(positive) + 1]
 
-    # Stage 3: Semantic patterns - require high avg_similarity to avoid over-generalization
-    patterns = [p for p in (semantic_patterns or []) if p.get('avg_similarity', 0) >= 0.85]
+    # Stage 3: Semantic patterns - require very high similarity
+    patterns = [p for p in (semantic_patterns or []) if p.get('avg_similarity', 0) >= 0.90]
+
+    # FIX 3: Add explicit anti-over-generalization warning at the top
+    parts.append("IMPORTANT: These are REFERENCE examples only. Each case is UNIQUE.")
+    parts.append("Do NOT assume this case will have the same outcome as similar past cases.")
+    parts.append("Judge THIS response on its OWN merits against the grading criteria.\n")
 
     if positive:
-        parts.append("SUCCESSFUL APPROACHES (similar code that passed):")
+        parts.append("SUCCESSFUL EXAMPLES (similar responses that passed):")
         for i, a in enumerate(positive, 1):
             score = a.get('score', 0)
-            parts.append(f"  {i}. [similarity: {score:.0%}] Code: {a['agent_output'][:200]}...")
-            parts.append(f"     Why it worked: {a['reasoning']}")
+            parts.append(f"  {i}. [similarity: {score:.0%}] Response excerpt: {a['agent_output'][:150]}...")
+            parts.append(f"     Why it passed: {a['reasoning'][:100]}...")
 
     if negative:
-        parts.append("\nFAILED APPROACHES (similar code that failed - check if same issue applies):")
+        parts.append("\nFAILED EXAMPLES (similar responses that failed - check if same issue applies):")
         for i, a in enumerate(negative, 1):
             score = a.get('score', 0)
-            parts.append(f"  {i}. [similarity: {score:.0%}] Code: {a['agent_output'][:200]}...")
-            parts.append(f"     Why it failed: {a['reasoning']}")
+            parts.append(f"  {i}. [similarity: {score:.0%}] Response excerpt: {a['agent_output'][:150]}...")
+            parts.append(f"     Why it failed: {a['reasoning'][:100]}...")
 
     if issues:
-        parts.append("\nKNOWN ISSUES (from similar code):")
+        parts.append("\nPAST ISSUES (only flag if SPECIFICALLY present in this response):")
         for i, issue in enumerate(issues, 1):
             score = issue.get('score', 0)
-            parts.append(f"  {i}. [similarity: {score:.0%}] {issue['description']}")
+            parts.append(f"  {i}. [similarity: {score:.0%}] {issue['description'][:100]}...")
 
     if patterns:
-        parts.append("\nSEMANTIC PATTERNS (warnings to check - NOT automatic failures):")
+        parts.append("\nPATTERNS TO CHECK (warnings only - NOT automatic failures):")
         for i, pattern in enumerate(patterns, 1):
-            freq = pattern.get('frequency', 1)
             avg_sim = pattern.get('avg_similarity', 0)
             parts.append(f"  {i}. {pattern['name']} [similarity: {avg_sim:.0%}]")
-            parts.append(f"     Check if this applies - only flag if the SPECIFIC vulnerability exists")
 
-    return "\n".join(parts) if parts else "No highly similar past experiences found."
+    if not positive and not negative and not issues and not patterns:
+        return "No highly similar past experiences found. Judge based on the criteria alone."
+
+    return "\n".join(parts)
 
 
 def classify_issue(issue: Issue, graph_manager, model: str = "gpt-4o-mini") -> tuple[Semantic, bool]:
