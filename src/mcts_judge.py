@@ -86,7 +86,7 @@ SUBTASKS = [
 ]
 
 
-@dataclass
+@dataclass(eq=False)
 class MCTSNode:
     """A node in the MCTS tree."""
     subtask_index: int  # Index into SUBTASKS, -1 for root, -2 for null action

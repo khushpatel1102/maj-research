@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAJ - Memory Assisted Judge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fff;
+            color: #1a1a1a;
+        }
+        .slide {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 120px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        h1 {
+            font-size: 64px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 48px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            color: #4a9eff;
+        }
+        h3 {
+            font-size: 32px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: #888;
+        }
+        p {
+            font-size: 28px;
+            line-height: 1.6;
+            color: #444;
+        }
+        ul {
+            font-size: 26px;
+            line-height: 2;
+            color: #444;
+            margin-left: 40px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .highlight {
+            color: #2563eb;
+        }
+        .subtitle {
+            font-size: 32px;
+            color: #666;
+            margin-top: 20px;
+        }
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            margin-top: 40px;
+        }
+        .box {
+            background: #f5f5f5;
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+        }
+        .box h3 {
+            color: #2563eb;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            font-size: 24px;
+        }
+        th, td {
+            padding: 20px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            color: #2563eb;
+        }
+        .green { color: #16a34a; }
+        .red { color: #dc2626; }
+        .yellow { color: #ca8a04; }
+        .diagram {
+            background: #f5f5f5;
+            padding: 40px;
+            border-radius: 12px;
+            margin-top: 30px;
+            text-align: center;
+            font-size: 22px;
+        }
+        .arrow {
+            color: #2563eb;
+            margin: 0 15px;
+        }
+        .stage {
+            display: inline-block;
+            background: #e0e0e0;
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin: 10px;
+        }
+        /* Bar Chart Styles */
+        .chart-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 40px;
+            height: 300px;
+        }
+        .bar-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .bar {
+            width: 80px;
+            background: #2563eb;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 10px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .bar.memory {
+            background: #16a34a;
+        }
+        .bar.stateless {
+            background: #64748b;
+        }
+        .bar-label {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+        }
+        .legend {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+        }
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        /* Graph Diagram */
+        .graph-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+        .node {
+            padding: 20px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 18px;
+            text-align: center;
+        }
+        .node.policy { background: #dbeafe; color: #1e40af; border: 2px solid #3b82f6; }
+        .node.attempt { background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
+        .node.issue { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
+        .node.fix { background: #dcfce7; color: #166534; border: 2px solid #22c55e; }
+        .node.semantic { background: #f3e8ff; color: #6b21a8; border: 2px solid #a855f7; }
+        .edge {
+            font-size: 14px;
+            color: #666;
+            padding: 5px 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .comparison-bars {
+            display: flex;
+            gap: 60px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+        .comparison-item {
+            text-align: center;
+        }
+        .comparison-item .bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            height: 200px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+<script>
+    let currentSlide = 0;
+    const slides = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        slides.push(...document.querySelectorAll('.slide'));
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+            e.preventDefault();
+            currentSlide = Math.min(currentSlide + 1, slides.length - 1);
+            slides[currentSlide].scrollIntoView({ behavior: 'smooth' });
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            currentSlide = Math.max(currentSlide - 1, 0);
+            slides[currentSlide].scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+</script>
+
+<!-- Slide 1: Title -->
+<div class="slide">
+    <h1>MAJ</h1>
+    <p class="subtitle">Memory Assisted Judge</p>
+    <p style="margin-top: 40px; color: #666;">Khush Patel | December 2024</p>
+</div>
+
+<!-- Slide 2: What is MAJ -->
+<div class="slide">
+    <h2>What is MAJ?</h2>
+    <p>An LLM-based judge that <span class="highlight">learns from past evaluations</span></p>
+    <div class="two-col">
+        <div class="box">
+            <h3>Stateless Judge</h3>
+            <ul>
+                <li>Evaluates each case independently</li>
+                <li>No memory of past decisions</li>
+                <li>Inconsistent across similar cases</li>
+            </ul>
+        </div>
+        <div class="box">
+            <h3>MAJ (Memory)</h3>
+            <ul>
+                <li>Stores past evaluations in Neo4j</li>
+                <li>Retrieves relevant examples</li>
+                <li>Learns from feedback</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 3: What Was Built -->
+<div class="slide">
+    <h2>What Was Built</h2>
+    <ul>
+        <li><span class="highlight">Core Pipeline</span> - Extract nodes (Policy, Attempt, Issue, Fix) and store in Neo4j</li>
+        <li><span class="highlight">Vector Embeddings</span> - Similarity search for relevant memories</li>
+        <li><span class="highlight">Three-Type Retrieval</span> - Policies, contrastive examples, semantic patterns</li>
+        <li><span class="highlight">Semantic Classification</span> - Auto-categorize issues into high-level types</li>
+    </ul>
+</div>
+
+<!-- Slide 3b: Graph Architecture -->
+<div class="slide">
+    <h2>Graph Architecture</h2>
+    <div class="graph-diagram">
+        <div class="node policy">Policy</div>
+        <div class="edge">← SATISFIES</div>
+        <div class="node attempt">Attempt</div>
+        <div class="edge">CAUSES →</div>
+        <div class="node issue">Issue</div>
+        <div class="edge">ABSTRACTS_TO →</div>
+        <div class="node semantic">Semantic</div>
+    </div>
+    <div class="graph-diagram" style="margin-top: 20px;">
+        <div class="node fix">Fix</div>
+        <div class="edge">RESOLVES →</div>
+        <div class="node issue">Issue</div>
+    </div>
+    <p style="margin-top: 40px; text-align: center;">Each node has embeddings for similarity search</p>
+</div>
+
+<!-- Slide 4: Three-Type Retrieval -->
+<div class="slide">
+    <h2>Three-Type Retrieval</h2>
+    <div class="diagram">
+        <div class="stage">Type 1<br><small>Similar Policies</small></div>
+        <span class="arrow">+</span>
+        <div class="stage">Type 2<br><small>Contrastive Examples</small></div>
+        <span class="arrow">+</span>
+        <div class="stage">Type 3<br><small>Semantic Patterns</small></div>
+    </div>
+    <div class="two-col" style="margin-top: 40px;">
+        <div>
+            <h3>Type 1: Policies</h3>
+            <p>Query: task embedding similarity</p>
+            <p style="font-size: 20px; color: #888;">Returns: similar requirements/criteria</p>
+        </div>
+        <div>
+            <h3>Type 2: Contrastive</h3>
+            <p>Query: code/output embedding similarity</p>
+            <p style="font-size: 20px; color: #888;">Returns: TOP 3 pass + TOP 3 fail examples</p>
+        </div>
+    </div>
+    <div style="margin-top: 30px;">
+        <h3>Type 3: Semantic Patterns</h3>
+        <p>Query: issue embedding similarity</p>
+        <p style="font-size: 20px; color: #888;">Returns: recurring issue categories (e.g., "SQL Injection" - 5 occurrences)</p>
+    </div>
+    <p style="margin-top: 30px; color: #666; text-align: center;">All three run in parallel and combine into one memory context</p>
+</div>
+
+<!-- Slide 5: Unit Test Results -->
+<div class="slide">
+    <h2>Unit Test Results</h2>
+    <p>Controlled test cases (code evaluation)</p>
+    <div class="comparison-bars">
+        <div class="comparison-item">
+            <div class="bars">
+                <div class="bar stateless" style="height: 180px;">90%</div>
+                <div class="bar memory" style="height: 200px;">100%</div>
+            </div>
+            <div class="bar-label">With Memory<br><small class="green">+10%</small></div>
+        </div>
+    </div>
+    <div class="legend">
+        <div class="legend-item"><div class="legend-box" style="background: #64748b;"></div> Stateless</div>
+        <div class="legend-item"><div class="legend-box" style="background: #16a34a;"></div> With Memory</div>
+    </div>
+    <p style="margin-top: 30px; color: #666; text-align: center;">Memory learns from past evaluations and improves accuracy</p>
+</div>
+
+
+<!-- Slide 7: Key Finding -->
+<div class="slide">
+    <h2>Key Finding</h2>
+    <h3>Model reasoning level matters (from EvalsBench leaderboard)</h3>
+    <div class="comparison-bars">
+        <div class="comparison-item">
+            <div class="bars">
+                <div class="bar stateless" style="height: 172px;">86%</div>
+                <div class="bar memory" style="height: 190px;">95%</div>
+            </div>
+            <div class="bar-label">claude-4-opus<br><small class="green">+9%</small></div>
+        </div>
+        <div class="comparison-item">
+            <div class="bars">
+                <div class="bar stateless" style="height: 174px;">87%</div>
+                <div class="bar memory" style="height: 182px;">91%</div>
+            </div>
+            <div class="bar-label">o3-mini<br><small class="green">+4%</small></div>
+        </div>
+        <div class="comparison-item">
+            <div class="bars">
+                <div class="bar stateless" style="height: 168px;">84%</div>
+                <div class="bar memory" style="height: 154px;">77%</div>
+            </div>
+            <div class="bar-label">gpt-4o-mini<br><small class="red">-8%</small></div>
+        </div>
+    </div>
+    <div class="legend">
+        <div class="legend-item"><div class="legend-box" style="background: #64748b;"></div> Vanilla</div>
+        <div class="legend-item"><div class="legend-box" style="background: #16a34a;"></div> With Examples</div>
+    </div>
+    <p style="margin-top: 30px; text-align: center;">Smaller models <span class="red">over-generalize</span>. Stronger models <span class="green">extract principles</span>.</p>
+</div>
+
+<!-- Slide 8: Fixes Applied -->
+<div class="slide">
+    <h2>Fixes Applied</h2>
+    <p>Memory was initially <span class="red">-10%</span>, now <span class="yellow">neutral (0%)</span></p>
+    <ul style="margin-top: 40px;">
+        <li><span class="highlight">Higher similarity thresholds</span> - Only show highly relevant examples</li>
+        <li><span class="highlight">Balanced pos/neg examples</span> - Prevent rejection bias from too many failures</li>
+        <li><span class="highlight">Anti-over-generalization prompts</span> - "Judge THIS case on its own merits"</li>
+    </ul>
+</div>
+
+<!-- Slide 9: Limitations -->
+<div class="slide">
+    <h2>Limitations</h2>
+    <ul>
+        <li>Memory doesn't help with <span class="highlight">gpt-4o-mini</span> (neutral effect)</li>
+        <li>Structured output overhead affects accuracy comparison</li>
+        <li>Cold start problem - need initial examples to be useful</li>
+        <li>Not tested on full dataset (100 samples vs 3,484)</li>
+    </ul>
+</div>
+
+<!-- Slide 10: Next Steps -->
+<div class="slide">
+    <h2>Next Steps</h2>
+    <ul>
+        <li><span class="highlight">Test with stronger model</span> - gpt-4o or claude-sonnet to validate memory gains</li>
+        <li><span class="highlight">Seeded memory experiment</span> - Pre-load with annotated examples</li>
+        <li><span class="highlight">Document findings</span> - Compare stateless vs memory across model tiers</li>
+    </ul>
+</div>
+
+<!-- Slide 11: Questions -->
+<div class="slide" style="text-align: center;">
+    <h2>Questions?</h2>
+    <p style="margin-top: 40px;">github.com/khushpatel2002/maj-research</p>
+</div>
+
+</body>
+</html>
