@@ -12,12 +12,35 @@ import math
 import random
 from dataclasses import dataclass, field
 from typing import Optional
+from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+# --- Structured Output Schemas ---
+
+class SubtaskDecision(BaseModel):
+    """Structured output for subtask evaluation."""
+    analysis: str
+    decision: bool  # True = code correct, False = incorrect
+
+class SelfAssessment(BaseModel):
+    """Structured output for LLM self-assessment."""
+    useful: bool  # True = subtask would improve evaluation
+
+class SimulatedExecutionResult(BaseModel):
+    """Structured output for simulated execution."""
+    trace: str
+    passed: bool  # True = code produces correct output
+
+class GlobalVerdict(BaseModel):
+    """Structured output for global evaluation."""
+    verdict: bool  # True = code correct
+    reasoning: str
 
 
 # --- Subtask Definitions ---
@@ -282,14 +305,13 @@ Would evaluating '{subtask_name}' improve the completeness of code evaluation?
 Answer Yes or No only."""
 
             try:
-                response = client.responses.create(
+                response = client.responses.parse(
                     model=self.config.model,
                     input=[{"role": "user", "content": prompt}],
+                    text_format=SelfAssessment,
                     temperature=0.1,
-                    max_output_tokens=10,
                 )
-                answer = response.output_text.strip().lower()
-                scores[child.subtask_index] = 1.0 if "yes" in answer else 0.2
+                scores[child.subtask_index] = 1.0 if response.output_parsed.useful else 0.2
             except Exception:
                 scores[child.subtask_index] = 0.5
 
@@ -318,28 +340,16 @@ First, provide a detailed analysis. Then conclude with:
 Decision: Yes (if code is correct from this perspective) or No (if incorrect)"""
 
         try:
-            response = client.responses.create(
+            response = client.responses.parse(
                 model=self.config.model,
                 input=[{"role": "user", "content": prompt}],
+                text_format=SubtaskDecision,
                 temperature=self.config.temperature,
-                max_output_tokens=1024,
             )
 
-            text = response.output_text
-            node.analysis = text
-
-            # Extract decision
-            lower = text.lower()
-            if "decision: no" in lower or "decision:no" in lower:
-                node.decision = False
-            elif "decision: yes" in lower or "decision:yes" in lower:
-                node.decision = True
-            else:
-                # Fallback: look at last line
-                last_lines = lower.strip().split('\n')[-3:]
-                no_count = sum(1 for l in last_lines if 'no' in l)
-                yes_count = sum(1 for l in last_lines if 'yes' in l)
-                node.decision = yes_count > no_count
+            result = response.output_parsed
+            node.analysis = result.analysis
+            node.decision = result.decision
 
         except Exception as e:
             node.analysis = f"Error: {str(e)}"
@@ -389,15 +399,14 @@ After your analysis, conclude with:
 Result: PASS (if output matches expected) or FAIL (if it doesn't)"""
 
         try:
-            response = client.responses.create(
+            response = client.responses.parse(
                 model=self.config.model,
                 input=[{"role": "user", "content": prompt}],
+                text_format=SimulatedExecutionResult,
                 temperature=0.2,
-                max_output_tokens=1024,
             )
 
-            text = response.output_text.lower()
-            return "result: pass" in text or "result:pass" in text
+            return response.output_parsed.passed
 
         except Exception:
             return True  # Default to pass on error
@@ -463,18 +472,15 @@ Considering ALL perspectives above, is the code correct?
 Answer: Yes or No, followed by a brief explanation."""
 
         try:
-            response = client.responses.create(
+            response = client.responses.parse(
                 model=self.config.model,
                 input=[{"role": "user", "content": prompt}],
+                text_format=GlobalVerdict,
                 temperature=0.2,
-                max_output_tokens=512,
             )
 
-            text = response.output_text
-            lower = text.lower()
-            verdict = not (lower.startswith("no") or "answer: no" in lower)
-
-            return {"verdict": verdict, "reasoning": text}
+            result = response.output_parsed
+            return {"verdict": result.verdict, "reasoning": result.reasoning}
 
         except Exception as e:
             return {"verdict": True, "reasoning": f"Global evaluation failed: {e}"}
