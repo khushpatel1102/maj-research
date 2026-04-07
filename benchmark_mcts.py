@@ -105,7 +105,7 @@ def run_benchmark_mode(mode, df, gm=None):
                 extra = {"stats": result.get('stats', {})}
 
             elif mode == "mcts_judge_memory":
-                config = MCTSConfig(model=MODEL, num_rollouts=4, max_depth=5)
+                config = MCTSConfig(model=MODEL, num_rollouts=2, max_depth=3)
                 result = run_mcts_judge_with_memory(
                     sample['task'], sample['agent_output'],
                     graph_manager=gm, goal=EVALSBENCH_GOAL,
@@ -119,7 +119,7 @@ def run_benchmark_mode(mode, df, gm=None):
                 }
 
             elif mode == "mcts_retrieval":
-                r_config = RetrievalConfig(num_rollouts=4, max_depth=3)
+                r_config = RetrievalConfig(num_rollouts=2, max_depth=2)
                 result = run_mcts_retrieval_with_judge(
                     sample['task'], sample['agent_output'],
                     graph_manager=gm, goal=EVALSBENCH_GOAL,
@@ -130,8 +130,8 @@ def run_benchmark_mode(mode, df, gm=None):
                 extra = {"retrieval_stats": result.get('retrieval_stats', {})}
 
             elif mode == "full_mcts":
-                r_config = RetrievalConfig(num_rollouts=4, max_depth=3)
-                j_config = MCTSConfig(model=MODEL, num_rollouts=4, max_depth=5)
+                r_config = RetrievalConfig(num_rollouts=2, max_depth=2)
+                j_config = MCTSConfig(model=MODEL, num_rollouts=2, max_depth=3)
                 result = run_full_mcts(
                     sample['task'], sample['agent_output'],
                     graph_manager=gm, goal=EVALSBENCH_GOAL,

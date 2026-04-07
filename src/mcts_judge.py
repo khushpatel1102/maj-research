@@ -42,48 +42,16 @@ class GlobalVerdict(BaseModel):
     verdict: bool  # True = code correct
     reasoning: str
 
+class GeneratedSubtask(BaseModel):
+    """A single dynamically generated evaluation subtask."""
+    name: str
+    prompt: str
 
-# --- Subtask Definitions ---
-# Each subtask evaluates code from a specific perspective
+class GeneratedSubtasks(BaseModel):
+    """Structured output for dynamic subtask generation."""
+    subtasks: list[GeneratedSubtask]
 
-SUBTASKS = [
-    {
-        "name": "functionality",
-        "prompt": "Does the code implement ALL required functionalities described in the problem statement? Check each requirement one by one."
-    },
-    {
-        "name": "logic",
-        "prompt": "Is the code logic correct? Trace through the algorithm step by step. Check for off-by-one errors, wrong conditions, incorrect variable usage."
-    },
-    {
-        "name": "edge_cases",
-        "prompt": "Does the code handle edge cases properly? Consider empty inputs, boundary values, special characters, and extreme cases."
-    },
-    {
-        "name": "output_format",
-        "prompt": "Does the code produce output in the correct format? Check return types, print formatting, and output structure."
-    },
-    {
-        "name": "completeness",
-        "prompt": "Is the implementation complete? Check for missing function definitions, unhandled branches, TODO comments, or placeholder code."
-    },
-    {
-        "name": "correctness",
-        "prompt": "Simulate running the code mentally with a simple test case. Does it produce the expected output?"
-    },
-    {
-        "name": "constraints",
-        "prompt": "Does the code respect all constraints mentioned in the problem? Check time/space complexity requirements, input size limits, and value ranges."
-    },
-    {
-        "name": "api_usage",
-        "prompt": "Are all library functions, APIs, and built-in methods used correctly? Check parameter order, return values, and method signatures."
-    },
-    {
-        "name": "data_flow",
-        "prompt": "Trace the data flow through the code. Are variables initialized correctly? Are transformations applied in the right order? Is data passed correctly between functions?"
-    },
-]
+
 
 
 @dataclass(eq=False)
@@ -116,10 +84,10 @@ class MCTSNode:
         exploration = exploration_constant * math.sqrt(math.log(parent_visits) / self.visit_count)
         return exploitation + exploration
 
-    def get_unused_subtasks(self, max_depth: int) -> list[int]:
+    def get_unused_subtasks(self, num_subtasks: int) -> list[int]:
         """Get subtask indices not yet used by children."""
         used = {c.subtask_index for c in self.children}
-        available = [i for i in range(min(len(SUBTASKS), max_depth)) if i not in used]
+        available = [i for i in range(num_subtasks) if i not in used]
         return available
 
     def get_trajectory(self) -> list["MCTSNode"]:
@@ -157,6 +125,32 @@ class MCTSJudge:
         self.config = config or MCTSConfig()
         self.root = None
         self.trajectories = []
+        self.subtasks = []  # Dynamically generated per evaluation
+
+    def _generate_subtasks(self, task: str, code: str) -> list[dict]:
+        """Dynamically generate evaluation subtasks based on the task and response."""
+        prompt = f"""You are an evaluation planning expert. Given a task and a response to evaluate, generate 5-7 specific evaluation perspectives.
+
+TASK/CRITERIA:
+{task[:500]}
+
+RESPONSE TO EVALUATE:
+{code[:500]}
+
+Generate evaluation subtasks that are specifically relevant to THIS task. Each subtask should check a different important aspect of whether the response meets the criteria. Be specific to the content, not generic."""
+
+        try:
+            response = client.responses.parse(
+                model=self.config.model,
+                input=[{"role": "user", "content": prompt}],
+                text_format=GeneratedSubtasks,
+                temperature=0.3,
+            )
+            subtasks = [{"name": s.name, "prompt": s.prompt} for s in response.output_parsed.subtasks]
+            if len(subtasks) >= 3:
+                return subtasks
+        except Exception:
+            raise RuntimeError("Failed to generate subtasks for this evaluation")
 
     def evaluate(self, task: str, code: str, memory_context: str = None) -> dict:
         """
@@ -170,6 +164,9 @@ class MCTSJudge:
         Returns:
             dict with verdict, reasoning, trajectory, and stats
         """
+        # Generate task-specific subtasks
+        self.subtasks = self._generate_subtasks(task, code)
+
         self.root = MCTSNode(subtask_index=-1)  # Root node
         self.trajectories = []
 
@@ -221,7 +218,7 @@ class MCTSJudge:
                     continue
 
             # 2. EXPANSION: Add new child
-            unused = current.get_unused_subtasks(len(SUBTASKS))
+            unused = current.get_unused_subtasks(len(self.subtasks))
             if not unused:
                 break
 
@@ -283,7 +280,7 @@ class MCTSJudge:
     def _llm_self_assess(self, node: MCTSNode, task: str, code: str, memory_context: str = None) -> dict:
         """LLM evaluates whether each child subtask would improve evaluation completeness."""
         trajectory = node.get_trajectory()
-        history = [SUBTASKS[n.subtask_index]["name"] for n in trajectory if n.subtask_index >= 0]
+        history = [self.subtasks[n.subtask_index]["name"] for n in trajectory if n.subtask_index >= 0]
 
         scores = {}
         for child in node.children:
@@ -291,17 +288,17 @@ class MCTSJudge:
                 scores[child.subtask_index] = 0.3
                 continue
 
-            subtask_name = SUBTASKS[child.subtask_index]["name"]
+            subtask_name = self.subtasks[child.subtask_index]["name"]
 
-            prompt = f"""You are a code evaluation planning expert.
+            prompt = f"""You are an evaluation planning expert.
 
-Problem: {task[:300]}
-Code snippet provided for evaluation.
+Task: {task[:300]}
+Response provided for evaluation.
 
 Previously evaluated: {', '.join(history) if history else 'None yet'}
 Proposed next evaluation: {subtask_name}
 
-Would evaluating '{subtask_name}' improve the completeness of code evaluation?
+Would evaluating '{subtask_name}' improve the completeness of the evaluation?
 Answer Yes or No only."""
 
             try:
@@ -318,26 +315,25 @@ Answer Yes or No only."""
         return scores
 
     def _execute_subtask(self, node: MCTSNode, task: str, code: str, memory_context: str = None):
-        """Execute a subtask: LLM analyzes code from specific perspective."""
-        subtask = SUBTASKS[node.subtask_index]
+        """Execute a subtask: LLM analyzes response from specific perspective."""
+        subtask = self.subtasks[node.subtask_index]
 
         memory_section = ""
         if memory_context:
             memory_section = f"\n\nMEMORY CONTEXT (past evaluation experiences):\n{memory_context}\n"
 
-        prompt = f"""You are evaluating code correctness from a specific perspective.
+        prompt = f"""You are evaluating a response from a specific perspective.
 
-PROBLEM STATEMENT:
+TASK/CRITERIA:
 {task}
 
-CODE SNIPPET:
+RESPONSE:
 {code}
 {memory_section}
 EVALUATION PERSPECTIVE: {subtask['name']}
 {subtask['prompt']}
 
-First, provide a detailed analysis. Then conclude with:
-Decision: Yes (if code is correct from this perspective) or No (if incorrect)"""
+First, provide a detailed analysis. Then conclude with your decision: does the response pass or fail from this perspective?"""
 
         try:
             response = client.responses.parse(
@@ -380,23 +376,22 @@ Decision: Yes (if code is correct from this perspective) or No (if incorrect)"""
 
     def _simulated_execution(self, task: str, code: str) -> bool:
         """
-        LLM simulates code execution with a test case.
-        Returns True if code appears correct, False otherwise.
+        LLM performs an independent quick evaluation.
+        Returns True if response appears correct, False otherwise.
         """
-        prompt = f"""You are a code interpreter. Simulate executing this code step by step.
+        prompt = f"""You are an independent evaluator. Quickly assess whether this response meets the criteria.
 
-PROBLEM: {task}
+CRITERIA: {task}
 
-CODE:
+RESPONSE:
 {code}
 
 Instructions:
-1. Create a simple test case based on the problem
-2. Execute the code line by line, tracking variable changes
-3. Compare the output with the expected result
+1. Identify the key requirements from the criteria
+2. Check if the response addresses each one
+3. Make a quick judgment
 
-After your analysis, conclude with:
-Result: PASS (if output matches expected) or FAIL (if it doesn't)"""
+Conclude with your assessment: does the response pass or fail?"""
 
         try:
             response = client.responses.parse(
@@ -449,7 +444,7 @@ Result: PASS (if output matches expected) or FAIL (if it doesn't)"""
         analyses = []
         for node in trajectory:
             if node.subtask_index >= 0 and node.analysis:
-                name = SUBTASKS[node.subtask_index]["name"]
+                name = self.subtasks[node.subtask_index]["name"]
                 decision = "PASS" if node.decision else "FAIL"
                 analyses.append(f"[{name}] {decision}: {node.analysis[:200]}")
 
@@ -459,16 +454,16 @@ Result: PASS (if output matches expected) or FAIL (if it doesn't)"""
         if memory_context:
             memory_section = f"\nMEMORY CONTEXT:\n{memory_context}\n"
 
-        prompt = f"""Based on the following multi-perspective analysis, provide a final verdict on code correctness.
+        prompt = f"""Based on the following multi-perspective analysis, provide a final verdict.
 
-PROBLEM: {task}
+CRITERIA: {task}
 
-CODE: {code}
+RESPONSE: {code}
 {memory_section}
 ANALYSIS FROM MULTIPLE PERSPECTIVES:
 {analyses_text}
 
-Considering ALL perspectives above, is the code correct?
+Considering ALL perspectives above, does the response meet the criteria?
 Answer: Yes or No, followed by a brief explanation."""
 
         try:
@@ -510,7 +505,7 @@ Answer: Yes or No, followed by a brief explanation."""
         for node in trajectory:
             if node.subtask_index >= 0:
                 result.append({
-                    "subtask": SUBTASKS[node.subtask_index]["name"],
+                    "subtask": self.subtasks[node.subtask_index]["name"],
                     "decision": "PASS" if node.decision else "FAIL",
                     "analysis": node.analysis[:500],
                     "visit_count": node.visit_count,

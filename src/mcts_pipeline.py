@@ -14,8 +14,8 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
-from models import get_embedding, JudgeResult
-from judge import judge, judge_with_memory, _format_memory_context
+from models import get_embedding, JudgeResult, Policy, Attempt, Issue, Fix
+from judge import judge, judge_with_memory, _format_memory_context, classify_issue
 from mcts_judge import MCTSJudge, MCTSConfig
 from mcts_retrieval import MCTSRetrieval, RetrievalConfig
 from prompts import build_judge_prompt, build_judge_with_memory_prompt, DEFAULT_GOAL
@@ -23,6 +23,36 @@ from prompts import build_judge_prompt, build_judge_with_memory_prompt, DEFAULT_
 load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+def store_mcts_result(task: str, agent_output: str, result: dict, graph_manager, model: str = "gpt-4o-mini"):
+    """Store MCTS evaluation result in the memory graph."""
+    policy = Policy(description=task).with_embedding()
+    attempt = Attempt(
+        agent_output=agent_output,
+        is_successful=result["is_successful"],
+        reasoning=result["reasoning"][:500]
+    ).with_embedding()
+
+    graph_manager.create_policy(policy)
+    graph_manager.create_attempt(attempt)
+    graph_manager.link_attempt_satisfies_policy(attempt.id, policy.id)
+
+    # Extract issues from trajectory (failed subtasks)
+    for t in result.get("trajectory", []):
+        if t["decision"] == "FAIL":
+            issue = Issue(description=f"{t['subtask']}: {t['analysis'][:200]}").with_embedding()
+            graph_manager.create_issue(issue)
+            graph_manager.link_attempt_causes_issue(attempt.id, issue.id)
+
+            # Classify into semantic category
+            try:
+                semantic, is_new = classify_issue(issue, graph_manager, model)
+                if is_new:
+                    graph_manager.get_or_create_semantic(semantic)
+                graph_manager.link_issue_abstracts_to_semantic(issue.id, semantic.id)
+            except Exception:
+                pass
 
 
 def run_stateless(task: str, agent_output: str, goal: str = None, model: str = "gpt-4o-mini") -> dict:
@@ -77,6 +107,9 @@ def run_mcts_judge_with_memory(
         "retrieval_type": "standard_3type"
     }
 
+    # Store in memory
+    store_mcts_result(task, agent_output, result, graph_manager, model)
+
     return result
 
 
@@ -120,13 +153,19 @@ def run_mcts_retrieval_with_judge(
 
     data = response.output_parsed
 
-    return {
+    result = {
         "is_successful": data.is_successful,
         "reasoning": data.reasoning,
         "issue_fix_pairs": [{"issue": p.issue, "fix": p.fix} for p in data.issue_fix_pairs],
+        "trajectory": [{"subtask": "full_evaluation", "decision": "PASS" if data.is_successful else "FAIL", "analysis": data.reasoning[:200]}],
         "retrieval_trajectory": retrieval_result["trajectory"],
         "retrieval_stats": retrieval_result["stats"],
     }
+
+    # Store in memory
+    store_mcts_result(task, agent_output, result, graph_manager, model)
+
+    return result
 
 
 def run_full_mcts(
@@ -161,15 +200,21 @@ def run_full_mcts(
     mcts_judge = MCTSJudge(judge_config)
     judge_result = mcts_judge.evaluate(task, agent_output, memory_context=memory_context)
 
-    return {
+    result = {
         "is_successful": judge_result["is_successful"],
         "reasoning": judge_result["reasoning"],
+        "trajectory": judge_result["trajectory"],
         "judge_trajectory": judge_result["trajectory"],
         "judge_stats": judge_result["stats"],
         "retrieval_trajectory": retrieval_result["trajectory"],
         "retrieval_stats": retrieval_result["stats"],
         "mode": "full_mcts"
     }
+
+    # Store in memory
+    store_mcts_result(task, agent_output, result, graph_manager, model)
+
+    return result
 
 
 # --- Convenience: Run all modes for comparison ---
