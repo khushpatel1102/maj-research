@@ -1,0 +1,81 @@
+idx,topic,expected,predicted,correct,latency_s
+2,Post-money valuation metrics,True,True,True,32.03
+3,Post-money valuation metrics,False,False,True,34.41
+4,Convertible notes vs SAFE in seed funding,True,False,False,46.76
+5,Convertible notes vs SAFE in seed funding,False,False,True,30.75
+6,Series A vs Series B funding terms,True,False,False,33.46
+7,Series A vs Series B funding terms,False,False,True,50.59
+12,Indicators of overvaluation in tech startups,True,True,True,28.46
+13,Indicators of overvaluation in tech startups,False,False,True,42.58
+16,Evaluating product-market fit in early-stage companies,True,False,False,34.62
+17,Evaluating product-market fit in early-stage companies,False,False,True,30.19
+22,Navigating regulatory challenges for fintech startups,True,True,True,40.55
+23,Navigating regulatory challenges for fintech startups,False,True,False,33.95
+28,Revenue forecasting methods for startups,True,False,False,37.76
+29,Revenue forecasting methods for startups,False,False,True,49.98
+30,Due diligence checklists for early-stage investments,True,True,True,34.7
+31,Due diligence checklists for early-stage investments,False,False,True,33.89
+34,Exit strategies for SaaS companies,True,True,True,36.48
+35,Exit strategies for SaaS companies,False,False,True,38.25
+40,Pattern recognition in tech market cycles,True,True,True,39.73
+41,Pattern recognition in tech market cycles,False,True,False,33.87
+42,Impact of interest rates on VC funding,True,True,True,32.97
+43,Impact of interest rates on VC funding,False,False,True,43.58
+46,Identifying financial bubbles in tech,True,True,True,60.12
+47,Identifying financial bubbles in tech,False,True,False,580.4
+48,Role of angel investors in seed stage,True,True,True,28.44
+49,Role of angel investors in seed stage,False,True,False,36.11
+52,Evaluating founder potential and team dynamics,True,True,True,31.33
+53,Evaluating founder potential and team dynamics,False,True,False,36.03
+54,Impact of ESG criteria on startup evaluations,True,True,True,26.33
+55,Impact of ESG criteria on startup evaluations,False,True,False,34.17
+58,Valuation strategies for AI companies,True,False,False,64.72
+59,Valuation strategies for AI companies,False,True,False,43.04
+64,Understanding equity dilution in funding rounds,True,True,True,31.29
+65,Understanding equity dilution in funding rounds,False,False,True,32.28
+72,Analyzing churn rate in subscription-based models,True,True,True,27.21
+73,Analyzing churn rate in subscription-based models,False,False,True,51.48
+74,Pricing strategies for tech startups,True,True,True,60.0
+75,Pricing strategies for tech startups,False,True,False,67.21
+76,Impact of network effects on startup growth,True,True,True,31.29
+77,Impact of network effects on startup growth,False,True,False,28.76
+82,Importance of intellectual property in tech valuations,True,True,True,45.05
+83,Importance of intellectual property in tech valuations,False,False,True,65.88
+86,Customer acquisition cost optimization,True,True,True,67.54
+87,Customer acquisition cost optimization,False,True,False,89.91
+92,Effective board management in startups,True,True,True,40.17
+93,Effective board management in startups,False,False,True,25.89
+96,Analyzing exit trends in the tech industry,True,True,True,44.23
+97,Analyzing exit trends in the tech industry,False,False,True,37.13
+102,Navigating antitrust issues in tech mergers,True,False,False,35.3
+103,Navigating antitrust issues in tech mergers,False,True,False,34.51
+104,Financial projections for hardware startups,True,True,True,25.11
+105,Financial projections for hardware startups,False,False,True,66.27
+114,Syndication dynamics in venture capital,True,False,False,41.99
+115,Syndication dynamics in venture capital,False,False,True,37.94
+116,Real options analysis in startup investments,True,True,True,46.4
+117,Real options analysis in startup investments,False,False,True,84.13
+118,Measuring unit economics in SaaS businesses,True,True,True,37.78
+119,Measuring unit economics in SaaS businesses,False,False,True,46.09
+120,Assessing scale potential in platform businesses,True,False,False,36.47
+121,Assessing scale potential in platform businesses,False,False,True,44.15
+126,Impact of currency fluctuations on global startup evaluations,True,True,True,36.38
+127,Impact of currency fluctuations on global startup evaluations,False,True,False,33.66
+130,Understanding customer segmentation in tech startups,True,True,True,65.46
+131,Understanding customer segmentation in tech startups,False,True,False,38.22
+138,Convergence trends in telecom and tech,True,False,False,44.98
+139,Convergence trends in telecom and tech,False,False,True,42.01
+142,Use of special purpose acquisition companies (SPACs) in tech,True,False,False,34.67
+143,Use of special purpose acquisition companies (SPACs) in tech,False,False,True,67.33
+144,Effect of remote work trends on startup operations,True,True,True,36.52
+145,Effect of remote work trends on startup operations,False,True,False,55.0
+148,Key success metrics for D2C tech startups,True,False,False,68.7
+149,Key success metrics for D2C tech startups,False,False,True,33.26
+150,Valuation challenges for biotech startups,True,False,False,27.89
+151,Valuation challenges for biotech startups,False,False,True,32.76
+152,Impact of cybersecurity incidents on valuations,True,False,False,47.08
+153,Impact of cybersecurity incidents on valuations,False,True,False,44.72
+154,Importance of founder-market fit,True,False,False,40.66
+155,Importance of founder-market fit,False,False,True,34.44
+156,Platform dependency risks in SaaS businesses,True,False,False,30.33
+157,Platform dependency risks in SaaS businesses,False,False,True,37.67
