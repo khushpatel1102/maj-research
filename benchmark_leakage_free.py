@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, 'src')
 
+from models import Policy, Attempt, get_embedding
 from judge import judge, judge_with_memory
 from graph_manager import GraphManager
 from mcts_judge import MCTSJudge, MCTSConfig
@@ -124,6 +125,71 @@ def build_memory(train_df, gm, model):
         print(f"  {r['label']}: {r['cnt']}")
 
 
+def build_oracle_memory(train_df, gm):
+    """Build memory using ground truth labels — perfect memory."""
+    print(f"\nBuilding ORACLE memory from {len(train_df)} training samples...")
+
+    for idx, row in tqdm(train_df.iterrows(), total=len(train_df), desc="Oracle memory"):
+        sample = evalsbench_to_maj(row)
+        try:
+            policy = Policy(description=sample['task']).with_embedding()
+            attempt = Attempt(
+                agent_output=sample['agent_output'],
+                is_successful=sample['expected'],  # Ground truth label
+                reasoning=f"Oracle: ground truth label is {'pass' if sample['expected'] else 'fail'}"
+            ).with_embedding()
+
+            gm.create_policy(policy)
+            gm.create_attempt(attempt)
+            gm.link_attempt_satisfies_policy(attempt.id, policy.id)
+
+        except Exception as e:
+            print(f"  Error: {e}")
+
+    counts = gm.driver.execute_query('MATCH (n) RETURN labels(n)[0] as label, count(n) as cnt')
+    print("\nOracle memory contents:")
+    for r in counts.records:
+        print(f"  {r['label']}: {r['cnt']}")
+
+
+def build_poisoned_memory(train_df, gm, poison_rate, seed=42):
+    """Build memory with flipped labels to test robustness."""
+    print(f"\nBuilding POISONED memory (flip rate={poison_rate:.0%}) from {len(train_df)} samples...")
+
+    rng = np.random.RandomState(seed)
+    flip_mask = rng.random(len(train_df)) < poison_rate
+    flipped = 0
+
+    for i, (idx, row) in enumerate(tqdm(train_df.iterrows(), total=len(train_df), desc=f"Poisoned ({poison_rate:.0%})")):
+        sample = evalsbench_to_maj(row)
+        try:
+            label = sample['expected']
+            if flip_mask[i]:
+                label = not label
+                flipped += 1
+
+            policy = Policy(description=sample['task']).with_embedding()
+            attempt = Attempt(
+                agent_output=sample['agent_output'],
+                is_successful=label,
+                reasoning=f"Label: {'pass' if label else 'fail'}"
+            ).with_embedding()
+
+            gm.create_policy(policy)
+            gm.create_attempt(attempt)
+            gm.link_attempt_satisfies_policy(attempt.id, policy.id)
+
+        except Exception as e:
+            print(f"  Error: {e}")
+
+    print(f"  Flipped {flipped}/{len(train_df)} labels ({flipped/len(train_df):.0%} actual)")
+
+    counts = gm.driver.execute_query('MATCH (n) RETURN labels(n)[0] as label, count(n) as cnt')
+    print("\nPoisoned memory contents:")
+    for r in counts.records:
+        print(f"  {r['label']}: {r['cnt']}")
+
+
 def evaluate_test_set(test_df, mode, gm, model):
     """Evaluate test set with frozen memory (no updates during eval)."""
     results = []
@@ -209,17 +275,57 @@ def evaluate_test_set(test_df, mode, gm, model):
     return pd.DataFrame(results), accuracy, avg_latency
 
 
+def run_experiment(experiment, train_df, test_df, gm, model, poison_rate=0.0, seed=42):
+    """Run a single experiment: build memory, then evaluate."""
+    gm.clear_all()
+    print(f"\nNeo4j cleared for experiment: {experiment}")
+
+    # Build memory based on experiment type
+    if experiment == "self_written":
+        build_memory(train_df, gm, model)
+    elif experiment == "oracle":
+        build_oracle_memory(train_df, gm)
+    elif experiment.startswith("poisoned"):
+        build_poisoned_memory(train_df, gm, poison_rate, seed)
+    elif experiment == "no_memory":
+        print("  No memory built (stateless baseline)")
+    else:
+        raise ValueError(f"Unknown experiment: {experiment}")
+
+    # Evaluate — only run memory modes since stateless is constant (65.0%)
+    if experiment == "no_memory":
+        eval_modes = ['stateless']
+    else:
+        eval_modes = ['maj', 'mcts_judge_memory']
+
+    results = {}
+    for mode in eval_modes:
+        print(f"\n--- Evaluating: {mode} ---")
+        results_df, accuracy, avg_latency = evaluate_test_set(
+            test_df, mode, gm, model
+        )
+
+        output_file = RESULTS_DIR / f"lf_{experiment}_{mode}.csv"
+        results_df.to_csv(output_file, index=False)
+
+        results[mode] = {'accuracy': accuracy, 'avg_latency': avg_latency}
+        print(f"  {mode}: {accuracy:.1f}% ({avg_latency:.1f}s)")
+
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(description="Leakage-Free Benchmark")
     parser.add_argument('--model', type=str, default='gpt-4o')
-    parser.add_argument('--train-ratio', type=float, default=0.5,
-                       help='Fraction of questions for memory building (default: 0.5)')
+    parser.add_argument('--experiment', type=str, default='all',
+                       choices=['all', 'self_written', 'oracle', 'poisoned', 'compare'],
+                       help='Which experiment to run')
+    parser.add_argument('--train-ratio', type=float, default=0.5)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
 
     RESULTS_DIR.mkdir(exist_ok=True)
 
-    # Load data
     benchmark_df = pd.read_csv(DATA_PATH / "benchmark_df.csv")
 
     print("=" * 60)
@@ -228,60 +334,58 @@ def main():
     print(f"Total samples: {len(benchmark_df)}")
     print(f"Unique questions: {benchmark_df['question'].nunique()}")
     print(f"Model: {args.model}")
-    print(f"Train ratio: {args.train_ratio}")
-    print(f"Seed: {args.seed}")
+    print(f"Experiment: {args.experiment}")
 
-    # Split by question
     train_df, test_df = split_by_question(benchmark_df, args.train_ratio, args.seed)
     print(f"\nTrain: {len(train_df)} samples ({len(train_df)//2} questions)")
     print(f"Test:  {len(test_df)} samples ({len(test_df)//2} questions)")
-    print(f"Train targets: {train_df['target'].value_counts().to_dict()}")
-    print(f"Test targets:  {test_df['target'].value_counts().to_dict()}")
 
-    # Initialize Neo4j
     gm = GraphManager()
-    gm.clear_all()
-    print("\nNeo4j cleared.")
+    all_experiments = {}
 
-    # Phase 1: Build memory from training set
-    build_memory(train_df, gm, args.model)
+    if args.experiment in ['all', 'compare']:
+        # Skip no_memory and self_written — already have those results
+        # Stateless: 65.0%, Self-written MAJ: 63.7%, Self-written MCTS+Mem: 68.8%
+        experiments = [
+            ("oracle", 0.0),
+            ("poisoned_10", 0.10),
+            ("poisoned_20", 0.20),
+            ("poisoned_50", 0.50),
+        ]
+    elif args.experiment == 'self_written':
+        experiments = [("self_written", 0.0)]
+    elif args.experiment == 'oracle':
+        experiments = [("oracle", 0.0)]
+    elif args.experiment == 'poisoned':
+        experiments = [
+            ("poisoned_10", 0.10),
+            ("poisoned_20", 0.20),
+            ("poisoned_50", 0.50),
+        ]
 
-    # Phase 2: Evaluate test set with frozen memory
-    modes = ['stateless', 'maj', 'mcts_judge', 'mcts_judge_memory']
-    all_results = {}
-
-    for mode in modes:
+    for exp_name, poison_rate in experiments:
         print(f"\n{'='*60}")
-        print(f"EVALUATING: {mode.upper()} (on test set, memory frozen)")
+        print(f"EXPERIMENT: {exp_name.upper()}")
         print(f"{'='*60}")
 
-        results_df, accuracy, avg_latency = evaluate_test_set(
-            test_df, mode, gm, args.model
+        results = run_experiment(
+            exp_name, train_df, test_df, gm, args.model, poison_rate, args.seed
         )
+        all_experiments[exp_name] = results
 
-        output_file = RESULTS_DIR / f"leakage_free_{mode}.csv"
-        results_df.to_csv(output_file, index=False)
-
-        all_results[mode] = {
-            'accuracy': accuracy,
-            'avg_latency': avg_latency,
-        }
-
-        print(f"\n--- {mode.upper()} ---")
-        print(f"Accuracy:    {accuracy:.1f}%")
-        print(f"Avg Latency: {avg_latency:.1f}s")
-        print(f"Saved to:    {output_file}")
-
-    # Summary
+    # Final summary
     print(f"\n{'='*60}")
-    print("LEAKAGE-FREE RESULTS SUMMARY")
+    print("FULL RESULTS SUMMARY")
     print(f"{'='*60}")
     print(f"Train: {len(train_df)} samples | Test: {len(test_df)} samples")
-    print(f"Memory built from train set, frozen during test evaluation")
-    print(f"\n{'Mode':<25} {'Accuracy':>10} {'Avg Latency':>12}")
-    print("-" * 50)
-    for mode, stats in all_results.items():
-        print(f"{mode:<25} {stats['accuracy']:>9.1f}% {stats['avg_latency']:>10.1f}s")
+    print(f"Model: {args.model}\n")
+
+    print(f"{'Experiment':<20} {'Mode':<25} {'Accuracy':>10}")
+    print("-" * 58)
+    for exp_name, modes in all_experiments.items():
+        for mode, stats in modes.items():
+            print(f"{exp_name:<20} {mode:<25} {stats['accuracy']:>9.1f}%")
+        print()
     print("=" * 60)
 
 
