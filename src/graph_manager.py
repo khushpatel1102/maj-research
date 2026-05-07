@@ -18,6 +18,55 @@ EMBEDDING_DIM = 1536
 DEFAULT_POLICY_THRESHOLD = 0.9
 
 
+class FrozenMemoryViolation(RuntimeError):
+    """Raised when a write is attempted on a frozen GraphManager."""
+
+
+# Methods that mutate the graph; blocked while frozen.
+_WRITE_METHODS = (
+    "create_policy",
+    "create_attempt",
+    "create_issue",
+    "create_fix",
+    "create_semantic",
+    "get_or_create_policy",
+    "get_or_create_semantic",
+    "link_attempt_satisfies_policy",
+    "link_attempt_causes_issue",
+    "link_fix_resolves_issue",
+    "link_issue_abstracts_to_semantic",
+    "clear_all",
+)
+
+
+class _FrozenMemoryContext:
+    """Context manager that monkey-patches write methods to raise."""
+
+    def __init__(self, gm):
+        self.gm = gm
+        self._originals = {}
+
+    def __enter__(self):
+        def make_blocker(name):
+            def _blocker(*args, **kwargs):
+                raise FrozenMemoryViolation(
+                    f"Write attempted on frozen GraphManager: {name}"
+                )
+            return _blocker
+
+        for name in _WRITE_METHODS:
+            if hasattr(self.gm, name):
+                self._originals[name] = getattr(self.gm, name)
+                setattr(self.gm, name, make_blocker(name))
+        return self.gm
+
+    def __exit__(self, exc_type, exc, tb):
+        for name, fn in self._originals.items():
+            setattr(self.gm, name, fn)
+        self._originals.clear()
+        return False
+
+
 class GraphManager:
     def __init__(self, policy_threshold: float = None):
         self.driver = GraphDatabase.driver(
@@ -227,6 +276,109 @@ class GraphManager:
         """Clear all nodes and relationships (for testing)."""
         with self.driver.session() as session:
             session.run("MATCH (n) DETACH DELETE n")
+
+    # --- Frozen Memory Audit ---
+
+    def snapshot(self) -> dict:
+        """
+        Return a deterministic fingerprint of the current memory state.
+
+        Used to verify that no writes occur during evaluation. The snapshot
+        contains per-label node counts, per-relationship-type counts, and a
+        SHA-256 hash over the sorted IDs of every node and edge.
+
+        Two snapshots taken before and after a frozen-memory evaluation must
+        be byte-identical; any divergence is evidence of a write that
+        violates the leakage-free protocol.
+        """
+        import hashlib
+
+        with self.driver.session() as session:
+            node_counts = {}
+            for r in session.run(
+                "MATCH (n) RETURN labels(n)[0] AS label, count(n) AS cnt"
+            ):
+                label = r["label"] or "Unlabeled"
+                node_counts[label] = r["cnt"]
+
+            edge_counts = {}
+            for r in session.run(
+                "MATCH ()-[e]->() RETURN type(e) AS type, count(e) AS cnt"
+            ):
+                edge_counts[r["type"]] = r["cnt"]
+
+            node_ids = sorted(
+                r["id"] for r in session.run(
+                    "MATCH (n) WHERE n.id IS NOT NULL RETURN n.id AS id"
+                )
+            )
+            edge_keys = sorted(
+                f"{r['from']}-{r['type']}->{r['to']}" for r in session.run(
+                    """MATCH (a)-[e]->(b)
+                       WHERE a.id IS NOT NULL AND b.id IS NOT NULL
+                       RETURN a.id AS from, type(e) AS type, b.id AS to"""
+                )
+            )
+
+        h = hashlib.sha256()
+        h.update("|".join(node_ids).encode())
+        h.update(b"\n")
+        h.update("|".join(edge_keys).encode())
+
+        return {
+            "node_counts": node_counts,
+            "edge_counts": edge_counts,
+            "total_nodes": sum(node_counts.values()),
+            "total_edges": sum(edge_counts.values()),
+            "fingerprint": h.hexdigest(),
+        }
+
+    def freeze(self):
+        """
+        Return a context manager that blocks all writes for its duration.
+
+        Any call to a write method (create_*, link_*, get_or_create_*,
+        clear_all) raises ``FrozenMemoryViolation`` while the context is
+        active. Pair with ``snapshot``/``diff_snapshots`` to obtain a
+        defense-in-depth guarantee that the memory graph does not change
+        during evaluation.
+        """
+        return _FrozenMemoryContext(self)
+
+    @staticmethod
+    def diff_snapshots(before: dict, after: dict) -> dict:
+        """
+        Compute the diff between two snapshots.
+
+        Returns a dict describing whether the snapshots are identical and,
+        if not, the per-label and per-relationship deltas. A frozen-memory
+        evaluation passes the audit only when ``identical`` is True.
+        """
+        identical = before["fingerprint"] == after["fingerprint"]
+
+        node_delta = {}
+        for label in set(before["node_counts"]) | set(after["node_counts"]):
+            d = after["node_counts"].get(label, 0) - before["node_counts"].get(label, 0)
+            if d != 0:
+                node_delta[label] = d
+
+        edge_delta = {}
+        for t in set(before["edge_counts"]) | set(after["edge_counts"]):
+            d = after["edge_counts"].get(t, 0) - before["edge_counts"].get(t, 0)
+            if d != 0:
+                edge_delta[t] = d
+
+        return {
+            "identical": identical,
+            "node_delta": node_delta,
+            "edge_delta": edge_delta,
+            "before_total_nodes": before["total_nodes"],
+            "after_total_nodes": after["total_nodes"],
+            "before_total_edges": before["total_edges"],
+            "after_total_edges": after["total_edges"],
+            "before_fingerprint": before["fingerprint"],
+            "after_fingerprint": after["fingerprint"],
+        }
 
     # --- Semantic Node Operations ---
 

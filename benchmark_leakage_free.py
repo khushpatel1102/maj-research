@@ -190,84 +190,120 @@ def build_poisoned_memory(train_df, gm, poison_rate, seed=42):
         print(f"  {r['label']}: {r['cnt']}")
 
 
-def evaluate_test_set(test_df, mode, gm, model):
-    """Evaluate test set with frozen memory (no updates during eval)."""
+def evaluate_test_set(test_df, mode, gm, model, audit_log_path=None):
+    """
+    Evaluate test set with frozen memory (no updates during eval).
+
+    The frozen-memory protocol is enforced in two ways:
+      1. A snapshot of the memory graph is taken before and after the run;
+         a diff is computed and logged. Any non-zero delta fails the audit.
+      2. All write methods on the graph are monkey-patched to raise
+         FrozenMemoryViolation for the duration of the evaluation. This
+         catches any leakage path immediately rather than after the fact.
+    """
+    snap_before = gm.snapshot()
+    print(f"  [audit] before: {snap_before['total_nodes']} nodes, "
+          f"{snap_before['total_edges']} edges, "
+          f"fingerprint={snap_before['fingerprint'][:16]}...")
+
     results = []
     correct = 0
     total_time = 0
 
-    for idx, row in tqdm(test_df.iterrows(), total=len(test_df), desc=f"Eval [{mode}]"):
-        sample = evalsbench_to_maj(row)
-        start = time.time()
+    with gm.freeze():
+        for idx, row in tqdm(test_df.iterrows(), total=len(test_df), desc=f"Eval [{mode}]"):
+            sample = evalsbench_to_maj(row)
+            start = time.time()
 
-        try:
-            if mode == "stateless":
-                result = run_stateless(
-                    sample['task'], sample['agent_output'],
-                    goal=EVALSBENCH_GOAL, model=model
-                )
-                predicted = result['attempt'].is_successful
+            try:
+                if mode == "stateless":
+                    result = run_stateless(
+                        sample['task'], sample['agent_output'],
+                        goal=EVALSBENCH_GOAL, model=model
+                    )
+                    predicted = result['attempt'].is_successful
 
-            elif mode == "maj":
-                # Use memory but DO NOT store new results
-                result = judge_with_memory(
-                    task=sample['task'],
-                    agent_output=sample['agent_output'],
-                    graph_manager=gm,
-                    goal=EVALSBENCH_GOAL,
-                    model=model
-                )
-                predicted = result['attempt'].is_successful
-                # NOTE: no memory storage here — frozen memory
+                elif mode == "maj":
+                    # Use memory but DO NOT store new results
+                    result = judge_with_memory(
+                        task=sample['task'],
+                        agent_output=sample['agent_output'],
+                        graph_manager=gm,
+                        goal=EVALSBENCH_GOAL,
+                        model=model
+                    )
+                    predicted = result['attempt'].is_successful
 
-            elif mode == "mcts_judge":
-                config = MCTSConfig(model=model, num_rollouts=2, max_depth=3)
-                mcts = MCTSJudge(config)
-                result = mcts.evaluate(sample['task'], sample['agent_output'])
-                predicted = result['is_successful']
+                elif mode == "mcts_judge":
+                    config = MCTSConfig(model=model, num_rollouts=2, max_depth=3)
+                    mcts = MCTSJudge(config)
+                    result = mcts.evaluate(sample['task'], sample['agent_output'])
+                    predicted = result['is_successful']
 
-            elif mode == "mcts_judge_memory":
-                config = MCTSConfig(model=model, num_rollouts=2, max_depth=3)
-                result = run_mcts_judge_with_memory(
-                    sample['task'], sample['agent_output'],
-                    graph_manager=gm, goal=EVALSBENCH_GOAL,
-                    mcts_config=config, model=model
-                )
-                predicted = result['is_successful']
-                # NOTE: no memory storage here — frozen memory
+                elif mode == "mcts_judge_memory":
+                    config = MCTSConfig(model=model, num_rollouts=2, max_depth=3)
+                    result = run_mcts_judge_with_memory(
+                        sample['task'], sample['agent_output'],
+                        graph_manager=gm, goal=EVALSBENCH_GOAL,
+                        mcts_config=config, model=model, store=False
+                    )
+                    predicted = result['is_successful']
 
-            else:
-                raise ValueError(f"Unknown mode: {mode}")
+                else:
+                    raise ValueError(f"Unknown mode: {mode}")
 
-            elapsed = time.time() - start
-            total_time += elapsed
-            expected = sample['expected']
-            is_correct = predicted == expected
+                elapsed = time.time() - start
+                total_time += elapsed
+                expected = sample['expected']
+                is_correct = predicted == expected
 
-            if is_correct:
-                correct += 1
+                if is_correct:
+                    correct += 1
 
-            results.append({
-                'idx': idx,
-                'topic': sample['topic'],
-                'expected': expected,
-                'predicted': predicted,
-                'correct': is_correct,
-                'latency_s': round(elapsed, 2),
-            })
+                results.append({
+                    'idx': idx,
+                    'topic': sample['topic'],
+                    'expected': expected,
+                    'predicted': predicted,
+                    'correct': is_correct,
+                    'latency_s': round(elapsed, 2),
+                })
 
-        except Exception as e:
-            elapsed = time.time() - start
-            total_time += elapsed
-            print(f"  ERROR: {e}")
-            results.append({
-                'idx': idx,
-                'topic': sample['topic'],
-                'expected': sample['expected'],
-                'predicted': None,
-                'correct': False,
-                'latency_s': round(elapsed, 2),
-            })
+            except Exception as e:
+                elapsed = time.time() - start
+                total_time += elapsed
+                print(f"  ERROR: {e}")
+                results.append({
+                    'idx': idx,
+                    'topic': sample['topic'],
+                    'expected': sample['expected'],
+                    'predicted': None,
+                    'correct': False,
+                    'latency_s': round(elapsed, 2),
+                })
+
+    # Frozen-memory audit: snapshot after the run and diff against before.
+    snap_after = gm.snapshot()
+    diff = GraphManager.diff_snapshots(snap_before, snap_after)
+    print(f"  [audit] after:  {snap_after['total_nodes']} nodes, "
+          f"{snap_after['total_edges']} edges, "
+          f"fingerprint={snap_after['fingerprint'][:16]}...")
+    if diff['identical']:
+        print("  [audit] PASS: memory unchanged during evaluation.")
+    else:
+        print(f"  [audit] FAIL: memory changed during evaluation. "
+              f"node_delta={diff['node_delta']}, edge_delta={diff['edge_delta']}")
+
+    if audit_log_path is not None:
+        import json
+        with open(audit_log_path, "w") as f:
+            json.dump({
+                "mode": mode,
+                "before": snap_before,
+                "after": snap_after,
+                "diff": diff,
+            }, f, indent=2)
+        print(f"  [audit] log: {audit_log_path}")
 
     accuracy = correct / len(results) * 100 if results else 0
     avg_latency = total_time / len(results) if results else 0
@@ -275,8 +311,14 @@ def evaluate_test_set(test_df, mode, gm, model):
     return pd.DataFrame(results), accuracy, avg_latency
 
 
-def run_experiment(experiment, train_df, test_df, gm, model, poison_rate=0.0, seed=42):
-    """Run a single experiment: build memory, then evaluate."""
+def run_experiment(experiment, train_df, test_df, gm, model, poison_rate=0.0,
+                   seed=42, tag=""):
+    """
+    Run a single experiment: build memory, then evaluate.
+
+    ``tag`` is appended to output filenames so multi-seed runs do not
+    overwrite one another (e.g. tag="_seed123").
+    """
     gm.clear_all()
     print(f"\nNeo4j cleared for experiment: {experiment}")
 
@@ -301,11 +343,12 @@ def run_experiment(experiment, train_df, test_df, gm, model, poison_rate=0.0, se
     results = {}
     for mode in eval_modes:
         print(f"\n--- Evaluating: {mode} ---")
+        audit_log = RESULTS_DIR / f"lf_{experiment}_{mode}{tag}_audit.json"
         results_df, accuracy, avg_latency = evaluate_test_set(
-            test_df, mode, gm, model
+            test_df, mode, gm, model, audit_log_path=audit_log
         )
 
-        output_file = RESULTS_DIR / f"lf_{experiment}_{mode}.csv"
+        output_file = RESULTS_DIR / f"lf_{experiment}_{mode}{tag}.csv"
         results_df.to_csv(output_file, index=False)
 
         results[mode] = {'accuracy': accuracy, 'avg_latency': avg_latency}
@@ -344,14 +387,24 @@ def main():
     all_experiments = {}
 
     if args.experiment in ['all', 'compare']:
-        # Skip no_memory and self_written — already have those results
-        # Stateless: 65.0%, Self-written MAJ: 63.7%, Self-written MCTS+Mem: 68.8%
-        experiments = [
-            ("oracle", 0.0),
-            ("poisoned_10", 0.10),
-            ("poisoned_20", 0.20),
-            ("poisoned_50", 0.50),
-        ]
+        # For seed 42 we already have no_memory and self_written; for other
+        # seeds we need the full set so the multi-seed CIs are complete.
+        if args.seed == 42:
+            experiments = [
+                ("oracle", 0.0),
+                ("poisoned_10", 0.10),
+                ("poisoned_20", 0.20),
+                ("poisoned_50", 0.50),
+            ]
+        else:
+            experiments = [
+                ("no_memory", 0.0),
+                ("self_written", 0.0),
+                ("oracle", 0.0),
+                ("poisoned_10", 0.10),
+                ("poisoned_20", 0.20),
+                ("poisoned_50", 0.50),
+            ]
     elif args.experiment == 'self_written':
         experiments = [("self_written", 0.0)]
     elif args.experiment == 'oracle':
@@ -363,13 +416,16 @@ def main():
             ("poisoned_50", 0.50),
         ]
 
+    tag = "" if args.seed == 42 else f"_seed{args.seed}"
+
     for exp_name, poison_rate in experiments:
         print(f"\n{'='*60}")
-        print(f"EXPERIMENT: {exp_name.upper()}")
+        print(f"EXPERIMENT: {exp_name.upper()}  (seed={args.seed})")
         print(f"{'='*60}")
 
         results = run_experiment(
-            exp_name, train_df, test_df, gm, args.model, poison_rate, args.seed
+            exp_name, train_df, test_df, gm, args.model, poison_rate,
+            args.seed, tag=tag
         )
         all_experiments[exp_name] = results
 

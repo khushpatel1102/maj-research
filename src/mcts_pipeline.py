@@ -78,13 +78,17 @@ def run_mcts_judge_with_memory(
     graph_manager,
     goal: str = None,
     mcts_config: MCTSConfig = None,
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-4o-mini",
+    store: bool = True,
 ) -> dict:
     """
     Mode 4: MCTS-Judge + MAJ Memory.
 
     Uses standard MAJ retrieval to get memory context,
     then feeds it into MCTS-Judge for reasoning.
+
+    When ``store`` is False the result is not written back to the graph.
+    Evaluation under the frozen-memory protocol must call with store=False.
     """
     mcts_config = mcts_config or MCTSConfig(model=model)
 
@@ -107,8 +111,8 @@ def run_mcts_judge_with_memory(
         "retrieval_type": "standard_3type"
     }
 
-    # Store in memory
-    store_mcts_result(task, agent_output, result, graph_manager, model)
+    if store:
+        store_mcts_result(task, agent_output, result, graph_manager, model)
 
     return result
 
@@ -119,13 +123,16 @@ def run_mcts_retrieval_with_judge(
     graph_manager,
     goal: str = None,
     retrieval_config: RetrievalConfig = None,
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-4o-mini",
+    store: bool = True,
 ) -> dict:
     """
     Mode 5: MCTS-Retrieval + Standard Judge.
 
     Uses MCTS tree search for retrieval (novel),
     then feeds context into standard single-pass judge.
+
+    When ``store`` is False the result is not written back to the graph.
     """
     goal = goal or DEFAULT_GOAL
 
@@ -162,8 +169,8 @@ def run_mcts_retrieval_with_judge(
         "retrieval_stats": retrieval_result["stats"],
     }
 
-    # Store in memory
-    store_mcts_result(task, agent_output, result, graph_manager, model)
+    if store:
+        store_mcts_result(task, agent_output, result, graph_manager, model)
 
     return result
 
@@ -175,7 +182,8 @@ def run_full_mcts(
     goal: str = None,
     retrieval_config: RetrievalConfig = None,
     judge_config: MCTSConfig = None,
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-4o-mini",
+    store: bool = True,
 ) -> dict:
     """
     Mode 6: Full MCTS — MCTS-Retrieval + MCTS-Judge.
@@ -211,8 +219,8 @@ def run_full_mcts(
         "mode": "full_mcts"
     }
 
-    # Store in memory
-    store_mcts_result(task, agent_output, result, graph_manager, model)
+    if store:
+        store_mcts_result(task, agent_output, result, graph_manager, model)
 
     return result
 

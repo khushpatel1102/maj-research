@@ -1,10 +1,15 @@
+# Core LLM clients
+openai==2.7.1
+anthropic==0.75.0
 
-openai
-anthropic
-google-genai
-ragas-experimental
-scikit-learn
-rich
-pandas
-numpy
-tqdm
+# Graph database
+neo4j==5.15.0
+
+# Data and structured outputs
+pydantic==2.12.4
+pandas==2.3.3
+numpy==2.3.5
+
+# Environment and utilities
+python-dotenv==1.0.0
+tqdm==4.67.1

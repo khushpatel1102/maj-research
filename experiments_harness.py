@@ -87,7 +87,7 @@ def evaluate_one(mode, sample, gm, model, mcts_config=None):
         result = run_mcts_judge_with_memory(
             sample['task'], sample['agent_output'],
             graph_manager=gm, goal=EVALSBENCH_GOAL,
-            mcts_config=config, model=model
+            mcts_config=config, model=model, store=False
         )
         return result['is_successful']
 
