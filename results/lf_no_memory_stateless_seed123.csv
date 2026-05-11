@@ -1,0 +1,81 @@
+idx,topic,expected,predicted,correct,latency_s
+0,Pre-money valuation techniques,True,True,True,12.01
+1,Pre-money valuation techniques,False,True,False,3.78
+4,Convertible notes vs SAFE in seed funding,True,True,True,2.43
+5,Convertible notes vs SAFE in seed funding,False,True,False,2.67
+6,Series A vs Series B funding terms,True,True,True,9.18
+7,Series A vs Series B funding terms,False,False,True,3.19
+10,Identifying tech bubble warning signs,True,True,True,2.7
+11,Identifying tech bubble warning signs,False,True,False,3.05
+14,Strategies for startup business model pivots,True,True,True,2.65
+15,Strategies for startup business model pivots,False,True,False,2.03
+20,Competitive dynamics in tech sectors,True,True,True,6.74
+21,Competitive dynamics in tech sectors,False,False,True,3.69
+22,Navigating regulatory challenges for fintech startups,True,True,True,2.35
+23,Navigating regulatory challenges for fintech startups,False,True,False,2.46
+24,Data privacy compliance for health tech,True,True,True,3.99
+25,Data privacy compliance for health tech,False,True,False,3.29
+34,Exit strategies for SaaS companies,True,True,True,2.97
+35,Exit strategies for SaaS companies,False,True,False,3.05
+42,Impact of interest rates on VC funding,True,True,True,2.64
+43,Impact of interest rates on VC funding,False,True,False,2.48
+50,Differences between venture debt and equity funding,True,False,False,6.26
+51,Differences between venture debt and equity funding,False,True,False,2.85
+54,Impact of ESG criteria on startup evaluations,True,True,True,2.86
+55,Impact of ESG criteria on startup evaluations,False,True,False,2.2
+56,Blockchain and crypto startup valuation methods,True,True,True,2.82
+57,Blockchain and crypto startup valuation methods,False,False,True,3.67
+60,Investment risk assessment in tech startups,True,True,True,3.64
+61,Investment risk assessment in tech startups,False,True,False,1.83
+64,Understanding equity dilution in funding rounds,True,True,True,3.04
+65,Understanding equity dilution in funding rounds,False,False,True,4.71
+66,Strategies for negotiating term sheets,True,True,True,3.41
+67,Strategies for negotiating term sheets,False,True,False,2.56
+68,Valuing intangible assets in tech startups,True,True,True,2.58
+69,Valuing intangible assets in tech startups,False,True,False,2.2
+70,Assessing competitive advantage in deep tech,True,True,True,5.22
+71,Assessing competitive advantage in deep tech,False,True,False,3.17
+72,Analyzing churn rate in subscription-based models,True,True,True,2.58
+73,Analyzing churn rate in subscription-based models,False,False,True,4.56
+76,Impact of network effects on startup growth,True,True,True,3.48
+77,Impact of network effects on startup growth,False,True,False,2.71
+78,Economies of scale in tech business models,True,True,True,2.28
+79,Economies of scale in tech business models,False,True,False,7.08
+80,Regulatory impacts on AI and machine learning companies,True,True,True,2.95
+81,Regulatory impacts on AI and machine learning companies,False,False,True,4.52
+82,Importance of intellectual property in tech valuations,True,True,True,2.46
+83,Importance of intellectual property in tech valuations,False,False,True,5.09
+84,Assessing market traction using KPIs,True,True,True,3.38
+85,Assessing market traction using KPIs,False,False,True,5.61
+92,Effective board management in startups,True,True,True,3.06
+93,Effective board management in startups,False,True,False,3.97
+94,Role of incubators and accelerators in tech ecosystems,True,True,True,4.38
+95,Role of incubators and accelerators in tech ecosystems,False,True,False,3.03
+96,Analyzing exit trends in the tech industry,True,True,True,2.26
+97,Analyzing exit trends in the tech industry,False,False,True,4.29
+98,Forecasting market entry for tech innovations,True,True,True,2.95
+99,Forecasting market entry for tech innovations,False,True,False,2.24
+100,Assessing disruption potential in mature industries,True,True,True,2.44
+101,Assessing disruption potential in mature industries,False,False,True,7.99
+104,Financial projections for hardware startups,True,True,True,3.3
+105,Financial projections for hardware startups,False,False,True,4.1
+108,Capital efficiency metrics for startups,True,True,True,2.45
+109,Capital efficiency metrics for startups,False,True,False,3.05
+110,Valuation discrepancies in private vs public markets,True,True,True,3.58
+111,Valuation discrepancies in private vs public markets,False,True,False,3.28
+112,Tech sector sensitivity to regulatory changes,True,True,True,5.34
+113,Tech sector sensitivity to regulatory changes,False,True,False,3.5
+114,Syndication dynamics in venture capital,True,True,True,2.85
+115,Syndication dynamics in venture capital,False,False,True,4.41
+122,Evaluating pivot strategies in startups,True,True,True,3.16
+123,Evaluating pivot strategies in startups,False,False,True,3.71
+132,Seed round valuation impacts on series progression,True,True,True,2.53
+133,Seed round valuation impacts on series progression,False,False,True,4.92
+134,IPO valuation debacles in recent history,True,True,True,2.13
+135,IPO valuation debacles in recent history,False,False,True,9.43
+136,Importance of network security compliance,True,True,True,2.56
+137,Importance of network security compliance,False,False,True,3.93
+146,Market saturation risks in mature tech markets,True,True,True,4.21
+147,Market saturation risks in mature tech markets,False,False,True,5.07
+152,Impact of cybersecurity incidents on valuations,True,True,True,3.37
+153,Impact of cybersecurity incidents on valuations,False,True,False,2.16

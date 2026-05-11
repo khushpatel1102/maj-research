@@ -1,0 +1,50 @@
+{
+  "mode": "maj",
+  "before": {
+    "node_counts": {
+      "Attempt": 80,
+      "Fix": 42,
+      "Policy": 80,
+      "Issue": 42,
+      "Semantic": 1
+    },
+    "edge_counts": {
+      "SATISFIES": 80,
+      "RESOLVES": 42,
+      "CAUSES": 42,
+      "ABSTRACTS_TO": 7
+    },
+    "total_nodes": 245,
+    "total_edges": 171,
+    "fingerprint": "dc58aa3fd8ef5ff0db7a06f6856729d47c81050684084312acfc17694b78cac0"
+  },
+  "after": {
+    "node_counts": {
+      "Attempt": 80,
+      "Fix": 42,
+      "Policy": 80,
+      "Issue": 42,
+      "Semantic": 1
+    },
+    "edge_counts": {
+      "SATISFIES": 80,
+      "RESOLVES": 42,
+      "CAUSES": 42,
+      "ABSTRACTS_TO": 7
+    },
+    "total_nodes": 245,
+    "total_edges": 171,
+    "fingerprint": "dc58aa3fd8ef5ff0db7a06f6856729d47c81050684084312acfc17694b78cac0"
+  },
+  "diff": {
+    "identical": true,
+    "node_delta": {},
+    "edge_delta": {},
+    "before_total_nodes": 245,
+    "after_total_nodes": 245,
+    "before_total_edges": 171,
+    "after_total_edges": 171,
+    "before_fingerprint": "dc58aa3fd8ef5ff0db7a06f6856729d47c81050684084312acfc17694b78cac0",
+    "after_fingerprint": "dc58aa3fd8ef5ff0db7a06f6856729d47c81050684084312acfc17694b78cac0"
+  }
+}

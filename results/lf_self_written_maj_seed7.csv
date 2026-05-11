@@ -1,0 +1,81 @@
+idx,topic,expected,predicted,correct,latency_s
+0,Pre-money valuation techniques,True,True,True,2.87
+1,Pre-money valuation techniques,False,True,False,3.6
+6,Series A vs Series B funding terms,True,True,True,2.29
+7,Series A vs Series B funding terms,False,True,False,2.93
+8,Understanding liquidation preferences in VC deals,True,True,True,3.8
+9,Understanding liquidation preferences in VC deals,False,True,False,2.58
+10,Identifying tech bubble warning signs,True,True,True,4.54
+11,Identifying tech bubble warning signs,False,True,False,3.01
+12,Indicators of overvaluation in tech startups,True,True,True,3.59
+13,Indicators of overvaluation in tech startups,False,False,True,9.85
+14,Strategies for startup business model pivots,True,True,True,3.34
+15,Strategies for startup business model pivots,False,True,False,2.56
+16,Evaluating product-market fit in early-stage companies,True,True,True,2.25
+17,Evaluating product-market fit in early-stage companies,False,False,True,10.65
+18,Market timing for tech startups entering competitive spaces,True,True,True,2.85
+19,Market timing for tech startups entering competitive spaces,False,False,True,13.42
+22,Navigating regulatory challenges for fintech startups,True,True,True,3.31
+23,Navigating regulatory challenges for fintech startups,False,True,False,3.41
+28,Revenue forecasting methods for startups,True,True,True,2.5
+29,Revenue forecasting methods for startups,False,True,False,3.43
+38,M&A strategies in the tech sector,True,True,True,3.01
+39,M&A strategies in the tech sector,False,True,False,8.19
+46,Identifying financial bubbles in tech,True,True,True,2.54
+47,Identifying financial bubbles in tech,False,True,False,2.94
+48,Role of angel investors in seed stage,True,True,True,2.36
+49,Role of angel investors in seed stage,False,True,False,3.43
+50,Differences between venture debt and equity funding,True,True,True,4.81
+51,Differences between venture debt and equity funding,False,True,False,3.59
+68,Valuing intangible assets in tech startups,True,True,True,2.56
+69,Valuing intangible assets in tech startups,False,True,False,2.66
+70,Assessing competitive advantage in deep tech,True,True,True,2.56
+71,Assessing competitive advantage in deep tech,False,True,False,2.76
+76,Impact of network effects on startup growth,True,True,True,3.96
+77,Impact of network effects on startup growth,False,True,False,3.01
+78,Economies of scale in tech business models,True,True,True,3.62
+79,Economies of scale in tech business models,False,True,False,9.62
+84,Assessing market traction using KPIs,True,True,True,40.35
+85,Assessing market traction using KPIs,False,False,True,10.0
+88,Lifetime value calculation methods for startups,True,True,True,3.52
+89,Lifetime value calculation methods for startups,False,False,True,12.1
+92,Effective board management in startups,True,True,True,2.45
+93,Effective board management in startups,False,False,True,6.58
+94,Role of incubators and accelerators in tech ecosystems,True,True,True,3.28
+95,Role of incubators and accelerators in tech ecosystems,False,True,False,2.81
+96,Analyzing exit trends in the tech industry,True,True,True,2.47
+97,Analyzing exit trends in the tech industry,False,False,True,8.72
+100,Assessing disruption potential in mature industries,True,True,True,2.51
+101,Assessing disruption potential in mature industries,False,False,True,10.34
+106,Impact of public market trends on startup exits,True,True,True,4.03
+107,Impact of public market trends on startup exits,False,True,False,3.91
+110,Valuation discrepancies in private vs public markets,True,True,True,3.01
+111,Valuation discrepancies in private vs public markets,False,True,False,4.19
+112,Tech sector sensitivity to regulatory changes,True,True,True,3.49
+113,Tech sector sensitivity to regulatory changes,False,True,False,3.3
+114,Syndication dynamics in venture capital,True,True,True,2.93
+115,Syndication dynamics in venture capital,False,False,True,12.55
+116,Real options analysis in startup investments,True,True,True,2.31
+117,Real options analysis in startup investments,False,True,False,3.83
+118,Measuring unit economics in SaaS businesses,True,True,True,5.18
+119,Measuring unit economics in SaaS businesses,False,False,True,11.37
+128,Strategic partnership evaluations in tech,True,True,True,2.76
+129,Strategic partnership evaluations in tech,False,True,False,2.23
+130,Understanding customer segmentation in tech startups,True,True,True,2.92
+131,Understanding customer segmentation in tech startups,False,True,False,2.54
+134,IPO valuation debacles in recent history,True,True,True,2.96
+135,IPO valuation debacles in recent history,False,False,True,11.3
+136,Importance of network security compliance,True,True,True,2.65
+137,Importance of network security compliance,False,False,True,5.77
+140,Valuation implications of tech stack choices,True,True,True,2.62
+141,Valuation implications of tech stack choices,False,True,False,3.17
+144,Effect of remote work trends on startup operations,True,True,True,3.61
+145,Effect of remote work trends on startup operations,False,True,False,5.81
+146,Market saturation risks in mature tech markets,True,True,True,2.71
+147,Market saturation risks in mature tech markets,False,True,False,2.59
+150,Valuation challenges for biotech startups,True,True,True,4.11
+151,Valuation challenges for biotech startups,False,False,True,13.71
+152,Impact of cybersecurity incidents on valuations,True,True,True,3.94
+153,Impact of cybersecurity incidents on valuations,False,True,False,2.8
+156,Platform dependency risks in SaaS businesses,True,True,True,2.69
+157,Platform dependency risks in SaaS businesses,False,True,False,3.37
