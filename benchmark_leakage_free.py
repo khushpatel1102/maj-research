@@ -14,11 +14,43 @@ This ensures no question appears in both train and test sets.
 
 import sys
 import time
+import random
 import argparse
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
+
+
+def _is_transient(exc: Exception) -> bool:
+    """Heuristic: should we retry this exception?"""
+    msg = str(exc).lower()
+    name = type(exc).__name__.lower()
+    keys = ("connection", "timeout", "timed out", "rate limit",
+            "ratelimit", "503", "502", "504", "apiconnection",
+            "remoteprotocol", "remotedisconnected", "incomplete read")
+    return any(k in msg or k in name for k in keys)
+
+
+def _call_with_retries(fn, *, max_attempts=5, base=2.0, max_sleep=30.0):
+    """
+    Retry ``fn()`` on transient errors with exponential backoff + jitter.
+    Non-transient errors raise immediately. Returns ``fn()``'s result.
+    """
+    last_exc = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return fn()
+        except Exception as exc:
+            last_exc = exc
+            if not _is_transient(exc) or attempt == max_attempts:
+                raise
+            sleep_s = min(max_sleep, base ** attempt) + random.uniform(0, 0.5)
+            print(f"  [retry {attempt}/{max_attempts-1}] {type(exc).__name__}: "
+                  f"{exc}; sleeping {sleep_s:.1f}s")
+            time.sleep(sleep_s)
+    # Unreachable in practice; satisfy linter.
+    raise last_exc  # type: ignore
 
 sys.path.insert(0, 'src')
 
@@ -217,36 +249,38 @@ def evaluate_test_set(test_df, mode, gm, model, audit_log_path=None):
 
             try:
                 if mode == "stateless":
-                    result = run_stateless(
+                    result = _call_with_retries(lambda: run_stateless(
                         sample['task'], sample['agent_output'],
                         goal=EVALSBENCH_GOAL, model=model
-                    )
+                    ))
                     predicted = result['attempt'].is_successful
 
                 elif mode == "maj":
                     # Use memory but DO NOT store new results
-                    result = judge_with_memory(
+                    result = _call_with_retries(lambda: judge_with_memory(
                         task=sample['task'],
                         agent_output=sample['agent_output'],
                         graph_manager=gm,
                         goal=EVALSBENCH_GOAL,
                         model=model
-                    )
+                    ))
                     predicted = result['attempt'].is_successful
 
                 elif mode == "mcts_judge":
                     config = MCTSConfig(model=model, num_rollouts=2, max_depth=3)
                     mcts = MCTSJudge(config)
-                    result = mcts.evaluate(sample['task'], sample['agent_output'])
+                    result = _call_with_retries(lambda: mcts.evaluate(
+                        sample['task'], sample['agent_output']
+                    ))
                     predicted = result['is_successful']
 
                 elif mode == "mcts_judge_memory":
                     config = MCTSConfig(model=model, num_rollouts=2, max_depth=3)
-                    result = run_mcts_judge_with_memory(
+                    result = _call_with_retries(lambda: run_mcts_judge_with_memory(
                         sample['task'], sample['agent_output'],
                         graph_manager=gm, goal=EVALSBENCH_GOAL,
                         mcts_config=config, model=model, store=False
-                    )
+                    ))
                     predicted = result['is_successful']
 
                 else:
@@ -273,12 +307,15 @@ def evaluate_test_set(test_df, mode, gm, model, audit_log_path=None):
                 elapsed = time.time() - start
                 total_time += elapsed
                 print(f"  ERROR: {e}")
+                # Mark this row as errored: predicted/correct=NaN so it is
+                # excluded from accuracy. analyze_stats and make_figures
+                # dropna(subset=["correct"]) already handle this.
                 results.append({
                     'idx': idx,
                     'topic': sample['topic'],
                     'expected': sample['expected'],
-                    'predicted': None,
-                    'correct': False,
+                    'predicted': np.nan,
+                    'correct': np.nan,
                     'latency_s': round(elapsed, 2),
                 })
 
@@ -305,14 +342,21 @@ def evaluate_test_set(test_df, mode, gm, model, audit_log_path=None):
             }, f, indent=2)
         print(f"  [audit] log: {audit_log_path}")
 
-    accuracy = correct / len(results) * 100 if results else 0
+    # Accuracy is computed over completed (non-errored) rows only.
+    df = pd.DataFrame(results)
+    completed = df.dropna(subset=["correct"])
+    accuracy = (completed["correct"].mean() * 100) if len(completed) else 0.0
     avg_latency = total_time / len(results) if results else 0
+    n_err = len(df) - len(completed)
+    if n_err:
+        print(f"  [warn] {n_err}/{len(df)} rows errored after retries; "
+              f"accuracy computed over {len(completed)} completed rows.")
 
-    return pd.DataFrame(results), accuracy, avg_latency
+    return df, accuracy, avg_latency
 
 
 def run_experiment(experiment, train_df, test_df, gm, model, poison_rate=0.0,
-                   seed=42, tag=""):
+                   seed=42, tag="", skip_mcts=False):
     """
     Run a single experiment: build memory, then evaluate.
 
@@ -339,6 +383,8 @@ def run_experiment(experiment, train_df, test_df, gm, model, poison_rate=0.0,
         eval_modes = ['stateless']
     else:
         eval_modes = ['maj', 'mcts_judge_memory']
+    if skip_mcts:
+        eval_modes = [m for m in eval_modes if not m.startswith('mcts')]
 
     results = {}
     for mode in eval_modes:
@@ -365,6 +411,8 @@ def main():
                        help='Which experiment to run')
     parser.add_argument('--train-ratio', type=float, default=0.5)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--skip-mcts', action='store_true',
+                       help='Skip the slow MCTS-mode evaluations')
     args = parser.parse_args()
 
     RESULTS_DIR.mkdir(exist_ok=True)
@@ -391,6 +439,8 @@ def main():
         # seeds we need the full set so the multi-seed CIs are complete.
         if args.seed == 42:
             experiments = [
+                ("no_memory", 0.0),
+                ("self_written", 0.0),
                 ("oracle", 0.0),
                 ("poisoned_10", 0.10),
                 ("poisoned_20", 0.20),
@@ -425,7 +475,7 @@ def main():
 
         results = run_experiment(
             exp_name, train_df, test_df, gm, args.model, poison_rate,
-            args.seed, tag=tag
+            args.seed, tag=tag, skip_mcts=args.skip_mcts
         )
         all_experiments[exp_name] = results
 

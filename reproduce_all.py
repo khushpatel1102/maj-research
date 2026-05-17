@@ -166,8 +166,8 @@ def step_audit_summary() -> bool:
     print("=" * 70)
     logs = sorted(RESULTS.glob("*_audit.json"))
     if not logs:
-        print("  (no audit logs found — multi-seed runs not yet committed)")
-        return True
+        print("  FAIL: no audit logs found in results/.")
+        return False
     all_pass = True
     for log in logs:
         with open(log) as f:
@@ -180,6 +180,20 @@ def step_audit_summary() -> bool:
               f"{diff.get('after_total_nodes', '?')}  "
               f"edges {diff.get('before_total_edges', '?')}->"
               f"{diff.get('after_total_edges', '?')}")
+
+    # Cross-check: every Stage-2 CSV should have a matching audit JSON.
+    print("\n  Audit coverage of STAGE2_SEED42 CSVs:")
+    missing = []
+    for name, csv in STAGE2_SEED42.items():
+        audit = csv.with_name(csv.stem + "_audit.json")
+        if audit.exists():
+            print(f"    OK       {csv.name:<48} -> {audit.name}")
+        else:
+            print(f"    MISSING  {csv.name:<48} (no {audit.name})")
+            missing.append(name)
+    if missing:
+        print(f"  WARNING: {len(missing)} CSV(s) have no audit log: {missing}")
+        # Coverage gap is a warning, not a hard fail — flag but don't crash.
     return all_pass
 
 
@@ -307,7 +321,7 @@ def main():
     print("\n" + "=" * 70)
     print("REPRODUCTION COMPLETE")
     print("=" * 70)
-    print(f"  Statistics : results/stats_summary.md, stats_table.csv, stats_pairs.csv")
+    print(f"  Statistics : results/stats_table.csv, stats_pairs.csv")
     print(f"  Figures    : {FIGDIR}/ ({len(list(FIGDIR.glob('*.png')))} PNGs)")
     print(f"  Artifacts  : {'all present' if artifacts_ok else 'SOME MISSING (see step 1)'}")
     print(f"  Audit      : {'all PASS' if audit_ok else 'SOME FAIL (see step 4)'}")

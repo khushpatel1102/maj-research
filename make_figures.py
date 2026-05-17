@@ -85,6 +85,18 @@ def align(a: pd.DataFrame, b: pd.DataFrame):
     return m["correct_a"].astype(int).values, m["correct_b"].astype(int).values
 
 
+def mcnemar_exact_p(a, b) -> float:
+    """Two-sided exact McNemar p-value on aligned 0/1 arrays."""
+    b01 = int(((a == 0) & (b == 1)).sum())  # B correct, A wrong
+    b10 = int(((a == 1) & (b == 0)).sum())  # A correct, B wrong
+    n = b01 + b10
+    if n == 0:
+        return 1.0
+    k = min(b01, b10)
+    # two-sided exact binomial with p=0.5
+    return float(min(1.0, 2 * sps.binom.cdf(k, n, 0.5)))
+
+
 # ---------------------------------------------------------------------------
 # Source files
 # ---------------------------------------------------------------------------
@@ -142,6 +154,20 @@ PAIRS = [
     ("MCTS+Mem (oracle)", "MCTS-Judge+Memory"),
 ]
 
+# Extra rows pulled from poisoning + defense CSVs (not in MODES).
+EXTRA_PAIRS = [
+    ("MAJ poison 10%",       RESULTS / "lf_poisoned_10_maj.csv",
+     "MAJ (oracle)",         RESULTS / "lf_oracle_maj.csv"),
+    ("MAJ poison 50%",       RESULTS / "lf_poisoned_50_maj.csv",
+     "MAJ (oracle)",         RESULTS / "lf_oracle_maj.csv"),
+    ("MCTS+Mem poison 10%",  RESULTS / "lf_poisoned_10_mcts_judge_memory.csv",
+     "MCTS+Mem (oracle)",    RESULTS / "lf_oracle_mcts_judge_memory.csv"),
+    ("MCTS+Mem poison 50%",  RESULTS / "lf_poisoned_50_mcts_judge_memory.csv",
+     "MCTS+Mem (oracle)",    RESULTS / "lf_oracle_mcts_judge_memory.csv"),
+    ("Defense on",           RESULTS / "harness_defense_on.csv",
+     "Defense off",          RESULTS / "harness_defense_off.csv"),
+]
+
 
 # ---------------------------------------------------------------------------
 # Figure 1: accuracy with Wilson CIs
@@ -179,33 +205,53 @@ def fig_accuracy_ci(dfs):
 # Figure 2: paired deltas forest plot
 # ---------------------------------------------------------------------------
 def fig_paired_deltas(dfs):
-    rows = []
-    for a, b in PAIRS:
-        da, db = dfs.get(a), dfs.get(b)
+    rows = []  # (label, delta_pct, lo_pct, hi_pct, significant)
+
+    def add(label, da, db):
         if da is None or db is None:
-            continue
+            return
         x, y = align(da, db)
+        if len(x) == 0:
+            return
         d, lo, hi = paired_bootstrap_ci(x, y)
-        rows.append((f"{a}\n  vs {b}", d * 100, lo * 100, hi * 100))
+        p = mcnemar_exact_p(x, y)
+        sig = (p < 0.05) and (lo > 0 or hi < 0)
+        rows.append((label, d * 100, lo * 100, hi * 100, sig, p))
+
+    for a, b in PAIRS:
+        add(f"{a}\n  vs {b}", dfs.get(a), dfs.get(b))
+
+    for a_name, a_path, b_name, b_path in EXTRA_PAIRS:
+        add(f"{a_name}\n  vs {b_name}", load(a_path), load(b_path))
+
     if not rows:
         return
-    labels = [r[0] for r in rows]
+    labels = [r[0] + ("  *" if r[4] else "") for r in rows]
     deltas = [r[1] for r in rows]
     lows = [r[1] - r[2] for r in rows]
     highs = [r[3] - r[1] for r in rows]
-    fig, ax = plt.subplots(figsize=(8, 0.7 * len(rows) + 1.5))
+    fig, ax = plt.subplots(figsize=(8.5, 0.55 * len(rows) + 1.5))
     y = np.arange(len(rows))
-    colors = ["#55A868" if d > 0 else "#C44E52" for d in deltas]
-    ax.errorbar(deltas, y, xerr=[lows, highs], fmt="o", color="black",
+    ax.errorbar(deltas, y, xerr=[lows, highs], fmt="none",
                 ecolor="grey", capsize=4)
-    for yi, d, c in zip(y, deltas, colors):
-        ax.plot(d, yi, "o", color=c, ms=8)
+    for yi, r in zip(y, rows):
+        d, sig = r[1], r[4]
+        if sig:
+            c = "#55A868" if d > 0 else "#C44E52"
+            ms = 10
+            edge = "black"
+        else:
+            c = "#9BB8D6" if d > 0 else "#E0A5A1"
+            ms = 8
+            edge = "grey"
+        ax.plot(d, yi, "o", color=c, ms=ms, mec=edge, mew=1)
     ax.axvline(0, ls="--", c="grey", lw=1)
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=8)
     ax.invert_yaxis()
     ax.set_xlabel("Paired accuracy delta A − B (percentage points), bootstrap 95% CI")
-    ax.set_title("Paired mode-vs-mode deltas (computed on identical items)")
+    ax.set_title("Paired mode-vs-mode deltas (computed on identical items)\n"
+                 "* = significant (McNemar p<0.05 AND bootstrap 95% CI excludes 0)")
     fig.tight_layout()
     fig.savefig(FIGDIR / "paired_deltas.png")
     plt.close(fig)
