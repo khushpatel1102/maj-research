@@ -1,0 +1,38 @@
+{
+  "mode": "maj",
+  "before": {
+    "node_counts": {
+      "Policy": 80,
+      "Attempt": 80
+    },
+    "edge_counts": {
+      "SATISFIES": 80
+    },
+    "total_nodes": 160,
+    "total_edges": 80,
+    "fingerprint": "cad2aefc35946524485d63a809a56a0f2b8d2a510ea5adb3a0177a5efac5b6b4"
+  },
+  "after": {
+    "node_counts": {
+      "Policy": 80,
+      "Attempt": 80
+    },
+    "edge_counts": {
+      "SATISFIES": 80
+    },
+    "total_nodes": 160,
+    "total_edges": 80,
+    "fingerprint": "cad2aefc35946524485d63a809a56a0f2b8d2a510ea5adb3a0177a5efac5b6b4"
+  },
+  "diff": {
+    "identical": true,
+    "node_delta": {},
+    "edge_delta": {},
+    "before_total_nodes": 160,
+    "after_total_nodes": 160,
+    "before_total_edges": 80,
+    "after_total_edges": 80,
+    "before_fingerprint": "cad2aefc35946524485d63a809a56a0f2b8d2a510ea5adb3a0177a5efac5b6b4",
+    "after_fingerprint": "cad2aefc35946524485d63a809a56a0f2b8d2a510ea5adb3a0177a5efac5b6b4"
+  }
+}

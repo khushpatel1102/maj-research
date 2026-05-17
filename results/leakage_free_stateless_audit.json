@@ -1,0 +1,28 @@
+{
+  "mode": "stateless",
+  "before": {
+    "node_counts": {},
+    "edge_counts": {},
+    "total_nodes": 0,
+    "total_edges": 0,
+    "fingerprint": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "after": {
+    "node_counts": {},
+    "edge_counts": {},
+    "total_nodes": 0,
+    "total_edges": 0,
+    "fingerprint": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "diff": {
+    "identical": true,
+    "node_delta": {},
+    "edge_delta": {},
+    "before_total_nodes": 0,
+    "after_total_nodes": 0,
+    "before_total_edges": 0,
+    "after_total_edges": 0,
+    "before_fingerprint": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "after_fingerprint": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  }
+}
