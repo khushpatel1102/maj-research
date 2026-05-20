@@ -1,0 +1,38 @@
+{
+  "mode": "mcts_judge_memory",
+  "before": {
+    "node_counts": {
+      "Policy": 80,
+      "Attempt": 80
+    },
+    "edge_counts": {
+      "SATISFIES": 80
+    },
+    "total_nodes": 160,
+    "total_edges": 80,
+    "fingerprint": "5a88e147a9bb0a8b9a2af6e944d53d0fbf3248ffa332f5a433a4f2ea08e39fcd"
+  },
+  "after": {
+    "node_counts": {
+      "Policy": 80,
+      "Attempt": 80
+    },
+    "edge_counts": {
+      "SATISFIES": 80
+    },
+    "total_nodes": 160,
+    "total_edges": 80,
+    "fingerprint": "5a88e147a9bb0a8b9a2af6e944d53d0fbf3248ffa332f5a433a4f2ea08e39fcd"
+  },
+  "diff": {
+    "identical": true,
+    "node_delta": {},
+    "edge_delta": {},
+    "before_total_nodes": 160,
+    "after_total_nodes": 160,
+    "before_total_edges": 80,
+    "after_total_edges": 80,
+    "before_fingerprint": "5a88e147a9bb0a8b9a2af6e944d53d0fbf3248ffa332f5a433a4f2ea08e39fcd",
+    "after_fingerprint": "5a88e147a9bb0a8b9a2af6e944d53d0fbf3248ffa332f5a433a4f2ea08e39fcd"
+  }
+}

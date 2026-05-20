@@ -1,0 +1,38 @@
+{
+  "mode": "mcts_judge_memory",
+  "before": {
+    "node_counts": {
+      "Attempt": 80,
+      "Policy": 80
+    },
+    "edge_counts": {
+      "SATISFIES": 80
+    },
+    "total_nodes": 160,
+    "total_edges": 80,
+    "fingerprint": "ee82e1954e536e96eed113884e81e19c523a865ed3fc3982d2012a6f42f17379"
+  },
+  "after": {
+    "node_counts": {
+      "Attempt": 80,
+      "Policy": 80
+    },
+    "edge_counts": {
+      "SATISFIES": 80
+    },
+    "total_nodes": 160,
+    "total_edges": 80,
+    "fingerprint": "ee82e1954e536e96eed113884e81e19c523a865ed3fc3982d2012a6f42f17379"
+  },
+  "diff": {
+    "identical": true,
+    "node_delta": {},
+    "edge_delta": {},
+    "before_total_nodes": 160,
+    "after_total_nodes": 160,
+    "before_total_edges": 80,
+    "after_total_edges": 80,
+    "before_fingerprint": "ee82e1954e536e96eed113884e81e19c523a865ed3fc3982d2012a6f42f17379",
+    "after_fingerprint": "ee82e1954e536e96eed113884e81e19c523a865ed3fc3982d2012a6f42f17379"
+  }
+}

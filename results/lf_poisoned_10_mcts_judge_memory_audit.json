@@ -1,0 +1,38 @@
+{
+  "mode": "mcts_judge_memory",
+  "before": {
+    "node_counts": {
+      "Policy": 53,
+      "Attempt": 53
+    },
+    "edge_counts": {
+      "SATISFIES": 53
+    },
+    "total_nodes": 106,
+    "total_edges": 53,
+    "fingerprint": "86620943f88bb16538d4b82ae54cf3843615a5f08b6e5f98fe4ea359a3a2dc44"
+  },
+  "after": {
+    "node_counts": {
+      "Policy": 53,
+      "Attempt": 53
+    },
+    "edge_counts": {
+      "SATISFIES": 53
+    },
+    "total_nodes": 106,
+    "total_edges": 53,
+    "fingerprint": "86620943f88bb16538d4b82ae54cf3843615a5f08b6e5f98fe4ea359a3a2dc44"
+  },
+  "diff": {
+    "identical": true,
+    "node_delta": {},
+    "edge_delta": {},
+    "before_total_nodes": 106,
+    "after_total_nodes": 106,
+    "before_total_edges": 53,
+    "after_total_edges": 53,
+    "before_fingerprint": "86620943f88bb16538d4b82ae54cf3843615a5f08b6e5f98fe4ea359a3a2dc44",
+    "after_fingerprint": "86620943f88bb16538d4b82ae54cf3843615a5f08b6e5f98fe4ea359a3a2dc44"
+  }
+}
