@@ -356,7 +356,7 @@ def evaluate_test_set(test_df, mode, gm, model, audit_log_path=None):
 
 
 def run_experiment(experiment, train_df, test_df, gm, model, poison_rate=0.0,
-                   seed=42, tag="", skip_mcts=False):
+                   seed=42, tag="", skip_mcts=False, only_mcts=False):
     """
     Run a single experiment: build memory, then evaluate.
 
@@ -380,11 +380,14 @@ def run_experiment(experiment, train_df, test_df, gm, model, poison_rate=0.0,
 
     # Evaluate — only run memory modes since stateless is constant (65.0%)
     if experiment == "no_memory":
-        eval_modes = ['stateless']
+        # mcts_judge is the MCTS-side stateless baseline (no memory used).
+        eval_modes = ['stateless', 'mcts_judge'] if only_mcts else ['stateless']
     else:
         eval_modes = ['maj', 'mcts_judge_memory']
     if skip_mcts:
         eval_modes = [m for m in eval_modes if not m.startswith('mcts')]
+    if only_mcts:
+        eval_modes = [m for m in eval_modes if m.startswith('mcts')]
 
     results = {}
     for mode in eval_modes:
@@ -413,6 +416,8 @@ def main():
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--skip-mcts', action='store_true',
                        help='Skip the slow MCTS-mode evaluations')
+    parser.add_argument('--only-mcts', action='store_true',
+                       help='Run only MCTS-mode evaluations')
     args = parser.parse_args()
 
     RESULTS_DIR.mkdir(exist_ok=True)
@@ -475,7 +480,8 @@ def main():
 
         results = run_experiment(
             exp_name, train_df, test_df, gm, args.model, poison_rate,
-            args.seed, tag=tag, skip_mcts=args.skip_mcts
+            args.seed, tag=tag, skip_mcts=args.skip_mcts,
+            only_mcts=args.only_mcts
         )
         all_experiments[exp_name] = results
 
