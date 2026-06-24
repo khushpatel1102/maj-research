@@ -1,0 +1,1582 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Memory-Assisted LLM as a Judge — Khush Patel — Innopolis University</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/dist/reveal.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+<style>
+:root {
+  --ink: #0a0a0a; --ink-soft: #2a2a2a; --paper: #fafaf7;
+  --rule: #d9d6cb; --accent: #8b1538; --accent-2: #1a3d6e;
+  --good: #1f7a3a; --warn: #b8860b; --bad: #8b1538; --mute: #6a6a66;
+  --hi-bg: rgba(139, 21, 56, 0.06);
+  --code-bg: #1a1a1a; --code-ink: #e6e6e6;
+}
+
+.reveal { font-family: 'Inter', -apple-system, sans-serif; font-weight: 300; color: var(--ink); letter-spacing: -0.01em; }
+.reveal .slides { text-align: left; }
+.reveal .slides section {
+  padding: 5vh 5vw 6vh 5vw;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.reveal .slides section.fig-slide { justify-content: flex-start; }
+html, body, .reveal, .reveal .backgrounds, .reveal .slides { background: var(--paper); }
+
+.reveal h1, .reveal h2, .reveal h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  color: var(--ink); font-weight: 600;
+  letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 0.5em 0;
+}
+.reveal h1 { font-size: 3.6em; font-weight: 700; }
+.reveal h2 { font-size: 2.4em; }
+.reveal h3 { font-size: 1.55em; color: var(--ink-soft); }
+.reveal p { font-size: 1.3em; line-height: 1.55; color: var(--ink-soft); margin: 0.55em 0; }
+.reveal em { font-style: italic; color: var(--accent); font-weight: 400; }
+.reveal strong { font-weight: 600; color: var(--ink); }
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.22em;
+  color: var(--accent); font-weight: 500;
+  margin-bottom: 1.2em; display: block;
+}
+
+.footer {
+  position: fixed; bottom: 2vh; left: 5vw; right: 5vw;
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.55em;
+  letter-spacing: 0.12em; color: var(--mute);
+  z-index: 100; text-transform: uppercase; pointer-events: none;
+}
+.footer .left { color: var(--ink-soft); }
+.rule { border: none; border-top: 1px solid var(--rule); margin: 1.4em 0; }
+.reveal .slide-number { display: none; }
+.reveal .progress { color: var(--accent); height: 2px; }
+
+/* --- TITLE --- */
+.title-slide { display: flex !important; flex-direction: column; justify-content: center; height: 100%; }
+.title-slide .institution {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7em;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--mute); margin-bottom: 1.8em;
+}
+.title-slide h1 { font-size: 2.6em; line-height: 1.1; max-width: 95%; }
+.title-slide .subtitle {
+  font-family: 'Fraunces', serif; font-size: 1.2em;
+  font-style: italic; color: var(--accent);
+  font-weight: 300; margin-top: 0.5em;
+}
+.title-slide .meta {
+  margin-top: 2em; display: grid;
+  grid-template-columns: auto 1fr; gap: 0.4em 2em;
+  font-size: 0.8em; max-width: 70%;
+}
+.title-slide .meta .k {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.8em;
+  text-transform: uppercase; letter-spacing: 0.15em; color: var(--mute);
+  align-self: center;
+}
+.title-slide .meta .v { color: var(--ink); font-weight: 400; }
+
+/* --- SECTION DIVIDER --- */
+.divider {
+  display: flex !important; flex-direction: column;
+  justify-content: center; align-items: flex-start; height: 100%;
+}
+.divider .roman {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75em;
+  letter-spacing: 0.3em; color: var(--accent);
+  text-transform: uppercase; margin-bottom: 1.5em;
+}
+.divider h2 {
+  font-family: 'Fraunces', serif; font-size: 3.8em;
+  font-weight: 600; letter-spacing: -0.03em;
+  line-height: 1; color: var(--ink); margin: 0;
+}
+.divider .sub-after {
+  margin-top: 1.5em; font-family: 'Fraunces', serif;
+  font-style: italic; color: var(--accent);
+  font-size: 1.3em; font-weight: 300;
+  max-width: 80%;
+}
+
+/* --- JOURNEY MOMENT (the question we faced) --- */
+.moment {
+  display: flex !important; flex-direction: column;
+  justify-content: center; height: 100%;
+}
+.moment .stage {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7em;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 1.5em;
+}
+.moment .q {
+  font-family: 'Fraunces', serif; font-style: italic;
+  font-weight: 300; font-size: 3.2em;
+  line-height: 1.2; max-width: 92%;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.moment .q strong { font-style: normal; font-weight: 600; color: var(--accent); }
+.moment .answer {
+  margin-top: 1.5em; font-family: 'Fraunces', serif;
+  font-size: 1.4em; font-weight: 400;
+  color: var(--ink-soft); max-width: 90%;
+}
+
+/* --- BULLET LIST (progressive) --- */
+.big-list { list-style: none; padding: 0; margin: 1em 0; }
+.big-list li {
+  font-family: 'Fraunces', serif; font-size: 1.85em;
+  font-weight: 400; line-height: 1.4;
+  padding: 0.4em 0; color: var(--ink);
+}
+.big-list li .ord {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.5em;
+  color: var(--accent); margin-right: 1em; font-weight: 500;
+  letter-spacing: 0.1em;
+}
+.big-list li em { font-style: italic; color: var(--accent); font-weight: 400; }
+
+/* --- BUILD CARDS (what we built at each stage) --- */
+.build-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin-top: 1em; }
+.build-card {
+  padding: 1.1em 1.3em;
+  background: white;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+}
+.build-card .bcomp {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.55em;
+  letter-spacing: 0.2em; color: var(--accent);
+  font-weight: 600; margin-bottom: 0.4em;
+  text-transform: uppercase;
+}
+.build-card .btitle {
+  font-family: 'Fraunces', serif; font-size: 1.3em;
+  font-weight: 600; margin-bottom: 0.3em;
+}
+.build-card .bbody { font-size: 0.95em; color: var(--ink-soft); line-height: 1.5; }
+.build-card .bcomp { font-size: 0.7em !important; }
+
+/* --- DIAGRAM: pipeline --- */
+.pipeline {
+  display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 0.5em; align-items: center; margin: 1.5em 0;
+}
+.pnode {
+  padding: 1.3em 0.7em; text-align: center;
+  border: 1.5px solid var(--ink); border-radius: 6px;
+  background: var(--paper);
+}
+.pnode.accent { border-color: var(--accent); background: rgba(139,21,56,0.04); }
+.pnode .ptag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.55em;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--mute); display: block; margin-bottom: 0.4em;
+}
+.pnode .pname {
+  font-family: 'Fraunces', serif; font-size: 1.3em;
+  font-weight: 600; color: var(--ink);
+}
+.parrow { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 1.7em; }
+
+/* --- DIAGRAM: graph schema --- */
+.graph-schema {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 1.5em;
+  margin: 2em 0 2em 0;
+}
+.gnode {
+  padding: 1.6em 1em; text-align: center;
+  border: 2.5px solid var(--ink); border-radius: 60px;
+  background: white;
+  font-family: 'Fraunces', serif; font-size: 1.7em;
+  font-weight: 600;
+  min-height: 1.6em;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.gnode.policy { border-color: var(--accent-2); color: var(--accent-2); }
+.gnode.attempt { border-color: var(--accent); color: var(--accent); }
+.gnode.issue { border-color: var(--warn); color: var(--warn); }
+.gnode.fix { border-color: var(--good); color: var(--good); }
+.gnode.semantic { border-color: var(--mute); color: var(--mute); }
+.gnode .gtag {
+  display: block; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5em; letter-spacing: 0.18em;
+  color: var(--mute); margin-top: 0.5em;
+  font-weight: 400; text-transform: uppercase;
+}
+
+.relations {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5em;
+  margin-top: 0.8em;
+}
+.rel {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.95em;
+  color: var(--ink-soft); padding: 0.55em 0.9em;
+  background: rgba(0,0,0,0.04); border-radius: 3px;
+}
+.rel .rname { color: var(--accent); font-weight: 600; }
+
+/* --- 6 MODES TABLE --- */
+.modes-table {
+  width: 100%; border-collapse: collapse; margin: 1em 0;
+  font-size: 1.1em;
+}
+.modes-table th, .modes-table td { padding: 0.7em 0.9em; text-align: left; }
+.modes-table thead th {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7em;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--mute); border-bottom: 1.5px solid var(--ink);
+  font-weight: 500;
+}
+.modes-table tbody td {
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-soft); font-variant-numeric: tabular-nums;
+}
+.modes-table .mode { font-weight: 500; color: var(--ink); font-family: 'Fraunces', serif; font-size: 1.15em; }
+.modes-table .acc { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--ink); }
+.modes-table .ci { font-family: 'JetBrains Mono', monospace; color: var(--mute); font-size: 0.85em; }
+.modes-table .baseline { background: rgba(26, 61, 110, 0.05); }
+.modes-table .red { color: var(--bad); font-weight: 600; }
+.modes-table .green { color: var(--good); font-weight: 600; }
+
+/* --- LEAKAGE CHANNELS --- */
+.leakage-diagram {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em;
+  margin: 1em 0;
+}
+.leak-channel {
+  padding: 1.3em; border: 1.5px solid var(--bad);
+  border-radius: 6px; background: rgba(139,21,56,0.04);
+}
+.leak-channel .lh {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6em;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--bad); font-weight: 600;
+  margin-bottom: 0.5em;
+}
+.leak-channel .lt {
+  font-family: 'Fraunces', serif; font-size: 1.35em;
+  font-weight: 600; margin-bottom: 0.5em;
+}
+.leak-flow {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.9em;
+  margin-top: 0.5em; line-height: 1.7;
+}
+.leak-flow .ar { color: var(--bad); }
+
+/* --- AUDIT LAYERS --- */
+.audit-layers {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.3em;
+  margin: 1em 0;
+}
+.layer-card {
+  padding: 1.3em; border: 1px solid var(--rule);
+  border-radius: 6px; background: white;
+}
+.layer-card .ltag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6em;
+  letter-spacing: 0.2em; color: var(--accent);
+  font-weight: 600; margin-bottom: 0.4em;
+  text-transform: uppercase;
+}
+.layer-card h3 { font-family: 'Fraunces', serif; font-size: 1.35em; margin: 0 0 0.5em 0; }
+.layer-card .lflow {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.9em;
+  color: var(--ink-soft); line-height: 1.7;
+  background: rgba(0,0,0,0.03); padding: 0.8em; border-radius: 4px;
+}
+.layer-card .lflow .key { color: var(--accent); }
+
+/* --- CODE BLOCK --- */
+.code-block {
+  background: var(--code-bg); color: var(--code-ink);
+  border-radius: 6px; padding: 1.2em 1.5em;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95em; line-height: 1.6;
+  margin: 0.8em 0; box-shadow: 0 8px 24px -8px rgba(0,0,0,0.25);
+  white-space: pre;
+  display: block;
+  overflow-x: auto;
+}
+.code-block .kw { color: #ff7b9c; }
+.code-block .fn { color: #82d4ff; }
+.code-block .str { color: #c5e478; }
+.code-block .com { color: #888; font-style: italic; }
+.code-block .num { color: #ffb86c; }
+.code-block .self { color: #c792ea; }
+.code-caption {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55em; letter-spacing: 0.15em;
+  color: var(--mute); text-transform: uppercase;
+}
+
+/* --- LOG EXAMPLE --- */
+.log-example {
+  font-family: 'JetBrains Mono', monospace;
+  background: #1a1a1a; color: #c5e478;
+  padding: 1.2em 1.5em; border-radius: 6px;
+  font-size: 0.85em; line-height: 1.7;
+  margin: 0.8em 0; box-shadow: 0 8px 24px -8px rgba(0,0,0,0.25);
+  white-space: pre;
+  display: block;
+}
+.log-example .ts { color: #888; }
+.log-example .err { color: #ff7b9c; font-weight: 600; }
+.log-example .ok { color: #82d4ff; }
+.log-example .warn { color: #ffb86c; }
+
+/* --- FIG --- */
+.fig-slide { display: flex !important; flex-direction: column; height: 100%; }
+.fig-slide .top { flex: 0 0 auto; }
+.fig-slide .fig-wrap {
+  flex: 1 1 auto; display: flex;
+  align-items: center; justify-content: center;
+  margin: 1em 0; min-height: 0;
+}
+.fig-slide img { max-width: 100%; max-height: 60vh; object-fit: contain; }
+.fig-slide .caption-line {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6em;
+  letter-spacing: 0.12em; color: var(--mute);
+  text-align: center; text-transform: uppercase;
+}
+.figure-card {
+  background: white; border-radius: 8px;
+  padding: 1.2em; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px -10px rgba(0,0,0,0.08);
+}
+
+/* --- BEFORE / AFTER --- */
+.before-after {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  gap: 1.2em; align-items: center; margin: 1.4em 0;
+}
+.ba-box {
+  padding: 1.3em; text-align: center;
+  border: 1.5px solid var(--rule); background: var(--paper);
+  border-radius: 4px;
+}
+.ba-box.was { border-color: var(--warn); }
+.ba-box.now { border-color: var(--good); }
+.ba-box .ba-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6em;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--mute); display: block; margin-bottom: 0.5em;
+}
+.ba-box .ba-stat {
+  font-family: 'Fraunces', serif; font-size: 3.2em;
+  font-weight: 600; line-height: 1; color: var(--ink);
+}
+.ba-box.was .ba-stat { color: var(--warn); }
+.ba-box.now .ba-stat { color: var(--good); }
+.ba-box .ba-note {
+  font-size: 0.75em; color: var(--mute);
+  margin-top: 0.5em; line-height: 1.4;
+}
+.ba-arrow { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 1.5em; }
+
+/* --- STATS ROW --- */
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2em; margin: 1em 0; }
+.stat-cell { text-align: left; }
+.stat-cell .sn {
+  font-family: 'Fraunces', serif; font-size: 2.7em;
+  font-weight: 600; line-height: 1; color: var(--ink);
+}
+.stat-cell .sl {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7em;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mute); margin-top: 0.4em;
+}
+
+/* --- WALKTHROUGH (what the judge sees) --- */
+.walkthrough {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6em;
+  margin-top: 0.6em;
+}
+.wt-step {
+  display: grid;
+  grid-template-columns: 8em 1fr;
+  gap: 1.2em;
+  padding: 0.9em 1.1em;
+  background: white;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  align-items: center;
+}
+.wt-step.input { border-left: 4px solid var(--accent-2); }
+.wt-step.retrieve { border-left: 4px solid var(--accent); }
+.wt-step.synth { border-left: 4px solid var(--warn); }
+.wt-step.output { border-left: 4px solid var(--good); }
+.wt-step .wt-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.wt-step.input .wt-label { color: var(--accent-2); }
+.wt-step.retrieve .wt-label { color: var(--accent); }
+.wt-step.synth .wt-label { color: var(--warn); }
+.wt-step.output .wt-label { color: var(--good); }
+.wt-step .wt-body {
+  font-size: 0.78em;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+.wt-step .wt-body .em {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink);
+}
+
+/* --- PROMPT BLOCK (what the judge literally receives) --- */
+.prompt-block {
+  background: #f5f3ee;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 1em 1.3em;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72em;
+  line-height: 1.65;
+  color: var(--ink);
+  white-space: pre-wrap;
+  margin: 0.6em 0;
+  max-height: 64vh;
+  overflow: auto;
+}
+.prompt-block .ph {
+  color: var(--accent);
+  font-weight: 600;
+}
+.prompt-block .pmu {
+  color: var(--mute);
+}
+.prompt-block .pem {
+  color: var(--good);
+}
+.prompt-block .pwarn {
+  color: var(--warn);
+}
+
+/* --- COMPACT CARD GRID (lit review, etc.) --- */
+.three-col-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2em;
+}
+.compact-card {
+  padding: 1.3em 1.4em;
+  background: white;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px -10px rgba(0,0,0,0.06);
+}
+.compact-card .cc-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 0.6em;
+  display: block;
+}
+.compact-card .cc-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-bottom: 0.4em;
+  color: var(--ink);
+}
+.compact-card .cc-body {
+  font-size: 0.9em;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+.compact-card .cc-body em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+/* --- MCTS TREE DIAGRAM --- */
+.mcts-tree {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78em;
+  line-height: 1.7;
+  background: #f5f3ee;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 1em 1.3em;
+  margin: 0.6em 0;
+  white-space: pre;
+  display: block;
+  overflow-x: auto;
+}
+.mcts-tree .root { color: var(--accent-2); font-weight: 600; }
+.mcts-tree .node { color: var(--ink); }
+.mcts-tree .pick { color: var(--good); font-weight: 600; }
+.mcts-tree .skip { color: var(--mute); }
+.mcts-tree .score { color: var(--accent); }
+.mcts-tree .lbl { color: var(--mute); font-style: italic; }
+
+/* --- AUDIT SNAPSHOT DIFF --- */
+.snap-diff {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1em;
+  align-items: center;
+  margin: 0.8em 0;
+}
+.snap-box {
+  background: white;
+  border: 1.5px solid var(--rule);
+  border-radius: 6px;
+  padding: 1em 1.2em;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72em;
+  line-height: 1.7;
+}
+.snap-box.ok { border-color: var(--good); }
+.snap-box.bad { border-color: var(--bad); }
+.snap-box .sh {
+  font-size: 0.85em;
+  color: var(--mute);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 0.4em;
+  display: block;
+}
+.snap-box.ok .sh { color: var(--good); }
+.snap-box.bad .sh { color: var(--bad); }
+.snap-box .fp { color: var(--accent); font-weight: 600; word-break: break-all; }
+.snap-box .delta { color: var(--bad); }
+.snap-arrow {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 1.8em;
+}
+
+/* --- HARNESS RESULTS --- */
+.harness-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2em; margin: 1em 0; }
+.harness-cell {
+  padding: 1.3em; background: white;
+  border-top: 3px solid var(--ink);
+  border-left: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0 0 4px 4px;
+}
+.harness-cell.good { border-top-color: var(--good); }
+.harness-cell.neutral { border-top-color: var(--mute); }
+.harness-cell.warn { border-top-color: var(--warn); }
+.harness-cell .htag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58em;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mute); margin-bottom: 0.5em; display: block;
+}
+.harness-cell .hname {
+  font-family: 'Fraunces', serif; font-size: 1.4em;
+  font-weight: 600; margin-bottom: 0.5em;
+}
+.harness-cell .hresult {
+  font-family: 'Fraunces', serif; font-size: 1.9em;
+  font-weight: 600; color: var(--ink); margin: 0.3em 0;
+}
+.harness-cell.good .hresult { color: var(--good); }
+.harness-cell.warn .hresult { color: var(--warn); }
+.harness-cell .hbody {
+  font-size: 0.92em; color: var(--ink-soft);
+  line-height: 1.5; margin-top: 0.4em;
+}
+
+/* --- TIMELINE --- */
+.timeline {
+  display: grid; grid-template-columns: auto 1fr;
+  gap: 1em 1.8em; margin: 1em 0;
+  align-items: baseline;
+}
+.timeline .when {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7em;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--accent); font-weight: 600;
+  padding-top: 0.3em;
+}
+.timeline .what {
+  border-left: 2px solid var(--rule);
+  padding: 0.3em 0 0.5em 1.4em;
+}
+.timeline .what .h {
+  font-family: 'Fraunces', serif; font-size: 1.1em;
+  font-weight: 600; margin-bottom: 0.2em;
+}
+.timeline .what .b { font-size: 0.82em; color: var(--ink-soft); line-height: 1.5; }
+
+/* --- EQUATION DISPLAY --- */
+.eqn-slide { display: flex !important; flex-direction: column; height: 100%; }
+.eqn-context {
+  font-size: 0.95em; color: var(--ink-soft);
+  max-width: 88%; line-height: 1.55; margin-top: 0.5em;
+}
+.eqn-display {
+  display: flex; align-items: center; justify-content: center;
+  margin: 1.5em 0; padding: 2em 1em;
+  background: white; border: 1px solid var(--rule); border-radius: 8px;
+  font-size: 1.8em;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px -10px rgba(0,0,0,0.08);
+  position: relative;
+}
+.eqn-num {
+  position: absolute; right: 1.2em; top: 50%;
+  transform: translateY(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6em; color: var(--mute);
+  letter-spacing: 0.1em;
+}
+.eqn-where {
+  font-size: 0.78em; color: var(--mute); font-style: italic;
+  margin-top: -0.2em;
+}
+</style>
+</head>
+<body>
+
+<div class="footer">
+  <span class="left">Memory-Assisted LLM as a Judge via Knowledge Graphs</span>
+  <span><span id="pn">1</span> / 36 &nbsp;·&nbsp; K. Patel · 2026</span>
+</div>
+
+<div class="reveal"><div class="slides">
+
+
+<!-- ============================================================ -->
+<!-- 1 · TITLE                                                    -->
+<!-- ============================================================ -->
+<section class="title-slide">
+  <div class="institution">Innopolis University · B22 · Computer Science</div>
+  <h1>Memory-Assisted <em>LLM as a Judge</em><br>via Knowledge Graphs<br>for Evaluating Agents.</h1>
+  <div class="subtitle">When does memory help — and how do we trust the measurement?</div>
+  <div class="meta">
+    <div class="k">Author</div>     <div class="v">Khush Pradipbhai Patel</div>
+    <div class="k">Supervisor</div> <div class="v">Bader Rasheed</div>
+    <div class="k">Program</div>    <div class="v">09.03.01 — Data Science &amp; AI</div>
+    <div class="k">Defense</div>    <div class="v">2 June 2026</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 2b · LIT — three lines                                       -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Literature Review · Three Lines of Prior Work</span>
+  <h2>What came before.</h2>
+
+  <div class="three-col-list" style="grid-template-columns: repeat(3, 1fr); gap: 1.4em; margin-top: 1.2em;">
+    <div class="compact-card fragment fade-in">
+      <span class="cc-tag">LLM-as-a-Judge</span>
+      <div class="cc-title">Automatic evaluators.</div>
+      <div class="cc-body">MT-Bench · G-Eval · Prometheus.<br>And the <em>known biases</em> they carry — position, length, self-preference.</div>
+    </div>
+
+    <div class="compact-card fragment fade-in">
+      <span class="cc-tag">Memory-Augmented</span>
+      <div class="cc-title">Models with state.</div>
+      <div class="cc-body">RAG · MemGPT · Reflexion · Generative Agents.<br>None of them study memory as a <em>leakage source</em>.</div>
+    </div>
+
+    <div class="compact-card fragment fade-in">
+      <span class="cc-tag">Evaluation Validity</span>
+      <div class="cc-title">Leakage is real.</div>
+      <div class="cc-body">Balloccu et al. · PoisonedRAG.<br>Contamination silently <em>inflates</em> reported scores.</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 4 · WHY · THE SETTING                                        -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · Motivation</span>
+  <h2>LLMs are now graded by other LLMs.</h2>
+  <ul class="big-list">
+    <li class="fragment fade-in"><span class="ord">USE</span>Ranking chatbots. Scoring agents. <em>Reward signals.</em></li>
+    <li class="fragment fade-in"><span class="ord">PROBLEM</span>Stateless judges have no consistency mechanism.</li>
+    <li class="fragment fade-in"><span class="ord">IDEA</span>Give the judge a <em>persistent memory</em> of past evaluations.</li>
+  </ul>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 5 · BUILD #1 — MAJ — the typed graph                         -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · Build #1 · MAJ</span>
+  <h2>A typed knowledge graph.</h2>
+
+  <div class="graph-schema">
+    <div class="gnode policy fragment fade-in">Policy<span class="gtag">grading rule</span></div>
+    <div class="gnode attempt fragment fade-in">Attempt<span class="gtag">past verdict</span></div>
+    <div class="gnode issue fragment fade-in">Issue<span class="gtag">problem</span></div>
+    <div class="gnode fix fragment fade-in">Fix<span class="gtag">correction</span></div>
+    <div class="gnode semantic fragment fade-in" style="grid-column:2">Semantic<span class="gtag">abstract class</span></div>
+  </div>
+
+  <div class="relations fragment fade-in">
+    <div class="rel"><span class="rname">SATISFIES</span> &nbsp; Attempt → Policy</div>
+    <div class="rel"><span class="rname">CAUSES</span> &nbsp; Attempt → Issue</div>
+    <div class="rel"><span class="rname">RESOLVES</span> &nbsp; Fix → Issue</div>
+    <div class="rel"><span class="rname">ABSTRACTS_TO</span> &nbsp; Issue → Semantic</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 6a · WHAT THE JUDGE SEES — END-TO-END WALKTHROUGH            -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · What The Judge Sees</span>
+  <h2>An end-to-end example.</h2>
+
+  <div class="walkthrough">
+    <div class="wt-step input fragment fade-in">
+      <div class="wt-label">Input</div>
+      <div class="wt-body">
+        <span class="em">Task:</span> "Explain key methods for determining the pre-money valuation of a tech startup before a Series A round."<br>
+        <span class="em">Response:</span> a 4-paragraph candidate answer covering DCF, comparable-company, and VC method.
+      </div>
+    </div>
+
+    <div class="wt-step retrieve fragment fade-in">
+      <div class="wt-label">Retrieve · 1</div>
+      <div class="wt-body">
+        <strong>Contrastive Attempts</strong> &nbsp;·&nbsp; cosine ≥ 0.85<br>
+        <span class="em">Returned:</span> 2 past responses that <span style="color:var(--good)">passed</span> on similar valuation questions, 1 that <span style="color:var(--bad)">failed</span>.
+      </div>
+    </div>
+
+    <div class="wt-step retrieve fragment fade-in">
+      <div class="wt-label">Retrieve · 2</div>
+      <div class="wt-body">
+        <strong>Similar Issues</strong> &nbsp;·&nbsp; cosine ≥ 0.90<br>
+        <span class="em">Returned:</span> "missed discount-rate justification", "vague comparable-company criterion".
+      </div>
+    </div>
+
+    <div class="wt-step retrieve fragment fade-in">
+      <div class="wt-label">Retrieve · 3</div>
+      <div class="wt-body">
+        <strong>Semantic Patterns</strong> &nbsp;·&nbsp; cosine ≥ 0.90<br>
+        <span class="em">Returned:</span> recurring category — "incomplete-methodology" — observed across 4 past attempts.
+      </div>
+    </div>
+
+    <div class="wt-step synth fragment fade-in">
+      <div class="wt-label">Assemble</div>
+      <div class="wt-body">All three stages are formatted into a single context block — examples, issues, patterns — and prepended to the judge's prompt alongside the task and rubric.</div>
+    </div>
+
+    <div class="wt-step output fragment fade-in">
+      <div class="wt-label">Judge</div>
+      <div class="wt-body">GPT-4o receives <em>task + rubric + retrieved context + candidate response</em>, and returns a structured verdict (<span class="em">pass / fail</span> + reasoning).</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 6a-2 · THE LITERAL PROMPT THE JUDGE RECEIVES                 -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · The Assembled Prompt</span>
+  <h2>What the judge literally receives.</h2>
+
+  <div class="prompt-block fragment fade-in"><span class="ph">[TASK]</span>
+Explain key methods for determining the pre-money valuation
+of a tech startup before a Series A round.
+
+<span class="ph">[RUBRIC]</span>
+DCF (future cash flows, projections); Comparable analysis
+(similar-co. multiples); VC method (rev × multiple − post-$);
+founder's share matters; strategic buyers pay more.
+
+<span class="ph">[RETRIEVED MEMORY CONTEXT]</span>
+<span class="pwarn">IMPORTANT: these are REFERENCE examples only. Each case is UNIQUE.
+Do NOT assume this case will have the same outcome as similar past
+cases. Judge THIS response on its own merits against the rubric.</span>
+
+<span class="pem">SUCCESSFUL EXAMPLES (similar responses that passed):</span>
+  1. [similarity: 91%] Response excerpt: "DCF projects future cash flows
+     at a stage-appropriate discount rate, while VC method back-solves..."
+     Why it passed: "covers all three methods, names discount-rate trade-off."
+  2. [similarity: 88%] Response excerpt: "Valuation triangulates DCF +
+     comparable + VC; founder dilution drives the negotiation..."
+     Why it passed: "explicit on founder share."
+
+<span class="pwarn">FAILED EXAMPLES (similar responses that failed):</span>
+  1. [similarity: 93%] Response excerpt: "Pre-money valuation is the
+     value of the company before investment..."
+     Why it failed: "tautological; never names a method."
+
+<span class="ph">SIMILAR ISSUES OBSERVED:</span>
+  · "missed discount-rate justification" (sim 0.91)
+  · "vague comparable-company criterion"  (sim 0.90)
+
+<span class="ph">RECURRING SEMANTIC PATTERN:</span>
+  · category: "incomplete-methodology" — seen in 4 prior attempts.
+
+<span class="ph">[CANDIDATE RESPONSE]</span>
+"Determining the pre-money valuation of a tech startup involves
+several methods: 1) Discounted Cash Flow (DCF) ... 2) Comparable
+Analysis ... 3) VC Method ..."  <span class="pmu">(... 4 paragraphs ...)</span>
+
+<span class="ph">[INSTRUCTION]</span>
+Output a structured verdict: { decision: pass | fail,
+                                reasoning: &lt;short justification&gt; }
+</div>
+  <p class="fragment fade-in" style="font-size:0.9em;color:var(--mute);margin-top:0.4em;">
+    Reconstructed from <code style="font-family:JetBrains Mono,monospace;font-size:0.95em">judge.py · _format_memory_context()</code>. Real run on EvalsBench item #41.
+  </p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 9 · BUILD #2 + #3 — MCTS layers                              -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · Builds #2 &amp; #3</span>
+  <h2>Two MCTS extensions.</h2>
+
+  <div class="build-grid">
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">Build #2 · Retrieval Layer</div>
+      <div class="btitle">MCTS-Retrieval</div>
+      <div class="bbody">Tree search over <strong>7 retrieval actions</strong> on the graph — four of them <em>multi-hop traversals</em> (Issues→Fixes, Semantics→Issues, Policy→Attempts, Attempts→Semantics). Trajectories scored by relevance, diversity, volume.</div>
+    </div>
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">Build #3 · Reasoning Layer</div>
+      <div class="btitle">MCTS-Judge</div>
+      <div class="bbody">Decomposes evaluation into 5–7 <em>task-specific subtasks</em>. Each rollout selects subtasks via UCT + LLM self-assessment. Final verdict aggregates the best trajectory.</div>
+    </div>
+  </div>
+
+  <p class="fragment fade-in" style="margin-top:1em;font-size:0.95em;">
+    Combined into <strong>six evaluation modes</strong>, ablating memory and search independently.
+  </p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 12a · MCTS-JUDGE WALKTHROUGH                                 -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · MCTS-Judge · Walkthrough</span>
+  <h2>How tree-search reasoning runs.</h2>
+
+  <div class="walkthrough">
+    <div class="wt-step input fragment fade-in">
+      <div class="wt-label">Input</div>
+      <div class="wt-body">
+        <span class="em">Task + Response.</span> Same EvalsBench item as before.
+      </div>
+    </div>
+    <div class="wt-step retrieve fragment fade-in">
+      <div class="wt-label">Decompose</div>
+      <div class="wt-body">
+        LLM dynamically generates <strong>5–7 task-specific subtasks</strong> — each probes the response from a different angle.
+        <br><span style="color:var(--mute);font-style:italic;font-size:0.9em">e.g. "Does it cover DCF?" · "Is the discount-rate logic correct?" · "Does it mention founder share?"</span>
+      </div>
+    </div>
+    <div class="wt-step retrieve fragment fade-in">
+      <div class="wt-label">Search</div>
+      <div class="wt-body">
+        4 rollouts, max depth 5. At each step, the child node maximising <strong>UCT + LLM self-assessment</strong> is selected. Each leaf scores the response from that subtask's perspective.
+      </div>
+    </div>
+    <div class="wt-step synth fragment fade-in">
+      <div class="wt-label">Aggregate</div>
+      <div class="wt-body">
+        Best trajectory's <em>majority vote</em> + a <em>global synthesis</em> over all visited subtasks.
+      </div>
+    </div>
+    <div class="wt-step output fragment fade-in">
+      <div class="wt-label">Verdict</div>
+      <div class="wt-body">Structured output: <span class="em">{ verdict: pass | fail, reasoning: ... }</span></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 12b · MCTS-JUDGE TREE DIAGRAM                                -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · MCTS-Judge · Tree Expansion</span>
+  <h2>One rollout, traced.</h2>
+
+  <div class="mcts-tree fragment fade-in"><span class="root">ROOT</span>  <span class="lbl">(task + response)</span>
+ │
+ ├── <span class="pick">[subtask 1]</span>  "DCF coverage?"           <span class="score">Q=0.92  N=4  UCT=1.18</span>  <span class="pick">← selected</span>
+ │     │
+ │     ├── <span class="pick">[subtask 3]</span>  "Discount rate?"      <span class="score">Q=0.88  N=2</span>     <span class="pick">← selected</span>
+ │     │     │
+ │     │     └── <span class="pick">[subtask 5]</span>  "Comparable co.?"  <span class="score">Q=0.85  N=1</span>  → <span style="color:var(--good);font-weight:600">PASS</span>
+ │     │
+ │     └── <span class="skip">[subtask 4]</span>  "Founder share?"      <span class="score">Q=0.71  N=1</span>     <span class="skip">← unselected</span>
+ │
+ ├── <span class="skip">[subtask 2]</span>  "VC method?"              <span class="score">Q=0.60  N=1</span>     <span class="skip">← unselected</span>
+ └── <span class="skip">[subtask 6]</span>  "Strategic buyer?"        <span class="score">Q=0.55  N=1</span>     <span class="skip">← unselected</span>
+
+<span class="lbl">final trajectory: 1 → 3 → 5  ·  majority = PASS  ·  global synthesis = PASS</span></div>
+
+  <p class="fragment fade-in" style="font-size:0.85em;color:var(--mute);margin-top:0.3em;">
+    UCT balances <strong>Q(s)</strong> (mean reward) with an exploration bonus that decays as <strong>N(s)</strong> grows.
+  </p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 11 · STAGE 2 RESULTS — early benchmark — and the surprise    -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · Early Six-Mode Benchmark</span>
+  <h2>And then — a surprise.</h2>
+
+  <table class="modes-table">
+    <thead>
+      <tr><th>Mode</th><th>Accuracy</th><th>Latency</th></tr>
+    </thead>
+    <tbody>
+      <tr class="baseline fragment fade-in"><td class="mode">Stateless</td><td class="acc">60.0%</td><td class="ci">3.8 s</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MAJ (memory)</td><td class="acc">63.3%</td><td class="ci">6.4 s</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MCTS-Judge (no memory)</td><td class="acc">56.7%</td><td class="ci">126.7 s</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MCTS-Judge + Memory</td><td class="acc">60.0%</td><td class="ci">51.2 s</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MCTS-Retrieval + Judge</td><td class="acc">60.0%</td><td class="ci">3.4 s</td></tr>
+      <tr class="fragment fade-in"><td class="mode red">Full MCTS</td><td class="acc red">46.7%</td><td class="ci">48.6 s</td></tr>
+    </tbody>
+  </table>
+
+  <p class="fragment fade-in" style="font-size:0.85em;color:var(--mute);margin-top:0.4em;">
+    <em>Early benchmark, 30 samples, un-audited.</em> Reported in the thesis as a <em>motivating observation</em>, not a verified result.
+  </p>
+  <p class="fragment fade-in" style="font-style:italic;color:var(--accent);font-family:'Fraunces',serif;font-size:1.15em;margin-top:0.4em;">
+    But the qualitative picture was clear: <strong>something was wrong</strong>.<br>
+    <span style="font-size:0.85em;color:var(--ink-soft);font-style:normal;">Either the system is broken — or the measurement is.</span>
+  </p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 12 · DIVIDER · STAGE 3 — TRUSTING THE NUMBERS                -->
+<!-- ============================================================ -->
+<section class="divider">
+  <div class="roman">Proposed Solution · Part 3</div>
+  <h2>Can we trust the numbers?</h2>
+  <div class="sub-after">The first numbers were too good.<br>The next numbers were too strange.<br>So I went back to the <em>measurement</em>.</div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 13 · THE LEAKAGE PROBLEM                                     -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · The Leakage Problem</span>
+  <h2>Two leakage channels.</h2>
+
+  <div class="leakage-diagram">
+    <div class="leak-channel fragment fade-in">
+      <div class="lh">Channel I</div>
+      <div class="lt">Paired-item leakage</div>
+      <div class="leak-flow">
+        Question Q<br>
+        ├─ Q.<span style="color:#82d4ff">PASS</span> → <span class="ar">train</span><br>
+        └─ Q.<span style="color:#ff7b9c">FAIL</span> → <span class="ar">test</span><br><br>
+        The judge sees Q.PASS in memory<br>
+        while scoring Q.FAIL.
+      </div>
+    </div>
+    <div class="leak-channel fragment fade-in">
+      <div class="lh">Channel II</div>
+      <div class="lt">Write-back leakage</div>
+      <div class="leak-flow">
+        t=0 &nbsp; score A → <span class="ar">write to memory</span><br>
+        t=1 &nbsp; score B (related to A)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp; memory now contains A's verdict<br><br>
+        Every early write contaminates<br>
+        every later read.
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 14 · BUILD #4 — the protocol                                 -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · Build #4 · The Protocol</span>
+  <h2>Closing both channels.</h2>
+
+  <ul class="big-list">
+    <li class="fragment fade-in"><span class="ord">FIX I</span>Split by <em>question</em>, not row.</li>
+    <li class="fragment fade-in"><span class="ord">FIX II</span><em>Freeze</em> memory during the test.</li>
+  </ul>
+  <hr class="rule">
+  <p class="fragment fade-in" style="font-size:1.05em;">
+    A claim is not a proof. <strong>How do I prove the freeze actually held?</strong>
+  </p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 15 · BUILD #4 cont. — the two-layer audit                    -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · The Two-Layer Audit</span>
+  <h2>SHA-256 + runtime write-blocker.</h2>
+
+  <div class="audit-layers">
+    <div class="layer-card fragment fade-in">
+      <div class="ltag">Layer 1 · After-the-fact</div>
+      <h3>SHA-256 fingerprint</h3>
+      <div class="lflow">
+        <span class="key">before</span> = sha256(graph)<br>
+        &nbsp;&nbsp;&nbsp; ... run evaluation ...<br>
+        <span class="key">after</span>  = sha256(graph)<br>
+        <span class="key">assert</span> before == after
+      </div>
+    </div>
+    <div class="layer-card fragment fade-in">
+      <div class="ltag">Layer 2 · During the run</div>
+      <h3>Runtime write-blocking</h3>
+      <div class="lflow">
+        graph.create = <span class="key">guard</span><br>
+        graph.link   = <span class="key">guard</span><br>
+        graph.upsert = <span class="key">guard</span><br>
+        <span style="color:#ff7b9c">FrozenMemoryViolation</span> if called
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 15b · AUDIT WALKTHROUGH                                      -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · The Audit · Walkthrough</span>
+  <h2>How the audit runs.</h2>
+
+  <div class="walkthrough">
+    <div class="wt-step input fragment fade-in">
+      <div class="wt-label">Before</div>
+      <div class="wt-body">Take a deterministic <strong>snapshot</strong>: count nodes &amp; edges by type, hash sorted node IDs + edge triples → <strong>SHA-256 fingerprint</strong>.</div>
+    </div>
+    <div class="wt-step retrieve fragment fade-in">
+      <div class="wt-label">During</div>
+      <div class="wt-body">Patch every write method on the graph: <code style="font-family:JetBrains Mono,monospace;font-size:0.95em">create · link · upsert</code>. Any attempted write raises <code style="font-family:JetBrains Mono,monospace;font-size:0.95em;color:var(--bad)">FrozenMemoryViolation</code>.</div>
+    </div>
+    <div class="wt-step retrieve fragment fade-in">
+      <div class="wt-label">Run eval</div>
+      <div class="wt-body">All 80 test items judged. Memory should be read-only.</div>
+    </div>
+    <div class="wt-step synth fragment fade-in">
+      <div class="wt-label">After</div>
+      <div class="wt-body">Take another snapshot. Compare to "before".</div>
+    </div>
+    <div class="wt-step output fragment fade-in">
+      <div class="wt-label">Verdict</div>
+      <div class="wt-body">Pass <em>only if</em>: fingerprints match exactly <strong>AND</strong> no FrozenMemoryViolation was raised. Otherwise the run is rejected.</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 15c · SNAPSHOT DIFF DIAGRAM                                  -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · The Audit · Snapshot Diff</span>
+  <h2>Before vs. after — two outcomes.</h2>
+
+  <div class="snap-diff">
+    <div class="snap-box ok fragment fade-in">
+      <span class="sh">✓ Audit passes</span>
+      nodes: 412 → 412<br>
+      edges: 831 → 831<br>
+      fingerprint:<br>
+      <span class="fp">a3f1...8c2b</span><br>
+      &nbsp;== <span class="fp">a3f1...8c2b</span>
+    </div>
+    <div class="snap-arrow fragment fade-in">vs.</div>
+    <div class="snap-box bad fragment fade-in">
+      <span class="sh">✗ Audit fails</span>
+      nodes: 412 → <span class="delta">492 (+80)</span><br>
+      edges: 831 → <span class="delta">1003 (+172)</span><br>
+      fingerprint:<br>
+      <span class="fp">a3f1...8c2b</span><br>
+      &nbsp;≠ <span class="fp" style="color:var(--bad)">d9e2...0f17</span>
+    </div>
+  </div>
+
+  <p class="fragment fade-in" style="font-size:0.95em;color:var(--ink-soft);margin-top:0.6em;">
+    The right side <em>is</em> what happened on the first run. The audit forced the bug into the open — and into the fix that followed.
+  </p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 17 · DIVIDER · STAGE 4 — RE-EVALUATION                       -->
+<!-- ============================================================ -->
+<section class="divider">
+  <div class="roman">Evaluation</div>
+  <h2>Re-evaluation under the audit.</h2>
+  <div class="sub-after">Now — with the audit passing — what do the six modes really do?</div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 18 · DATASET                                                 -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Evaluation · Dataset</span>
+  <h2>EvalsBench.</h2>
+  <ul class="big-list">
+    <li class="fragment fade-in"><span class="ord">160</span>samples · finance / startup QA.</li>
+    <li class="fragment fade-in"><span class="ord">80</span>unique questions — each appearing twice.</li>
+    <li class="fragment fade-in"><span class="ord">50/50</span>balanced PASS / FAIL.</li>
+    <li class="fragment fade-in"><span class="ord">PAIRED</span>a natural stress test for leakage.</li>
+  </ul>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 18b · STATISTICAL METHODOLOGY — WILSON + McNEMAR             -->
+<!-- ============================================================ -->
+<section class="eqn-slide">
+  <span class="eyebrow">Evaluation · Statistical Methodology</span>
+  <h2>How significance is decided.</h2>
+  <p class="eqn-context fragment fade-in">
+    Every accuracy is reported with a <strong>two-sided Wilson 95% CI</strong>. Mode-versus-mode comparisons are paired and assessed with the <strong>exact McNemar test</strong>.
+  </p>
+
+  <div class="eqn-display fragment fade-in" style="font-size: 1.1em; padding: 1.4em;">
+    $$\mathrm{CI}_{\mathrm{Wilson}} \;=\; \frac{p + \tfrac{z^{2}}{2n} \;\pm\; z\sqrt{\tfrac{p(1-p)}{n} + \tfrac{z^{2}}{4n^{2}}}}{1 + \tfrac{z^{2}}{n}}$$
+    <span class="eqn-num">(3.4)</span>
+  </div>
+
+  <div class="eqn-display fragment fade-in" style="font-size: 1.1em; padding: 1.4em;">
+    $$p_{\mathrm{McNemar}} \;=\; 2 \sum_{k=0}^{\min(b,c)} \binom{b+c}{k}\left(\tfrac{1}{2}\right)^{b+c}$$
+    <span class="eqn-num">(3.5)</span>
+  </div>
+
+  <p class="eqn-where fragment fade-in" style="font-size: 0.72em;">A difference is declared significant only when the McNemar p-value &lt; 0.05 <em>and</em> the paired bootstrap CI excludes zero. &nbsp; $b, c$ = discordant pairs.</p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 19 · AUDITED RESULTS                                         -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Evaluation · Audited Results</span>
+  <h2>Under the audited protocol.</h2>
+
+  <table class="modes-table">
+    <thead>
+      <tr><th>Mode</th><th>Accuracy</th><th>95% Wilson CI</th><th>vs. Stateless</th></tr>
+    </thead>
+    <tbody>
+      <tr class="baseline fragment fade-in"><td class="mode">Stateless</td><td class="acc">70.0%</td><td class="ci">[59.2, 78.9]</td><td class="ci">— baseline —</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MAJ (memory)</td><td class="acc">65.0%</td><td class="ci">[54.1, 74.5]</td><td class="ci">−5.0 pp · p = 0.29</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MCTS-Judge</td><td class="acc">70.0%</td><td class="ci">[59.2, 78.9]</td><td class="ci">±0.0 pp</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MCTS-Judge + Memory</td><td class="acc">71.8%</td><td class="ci">[61.0, 80.6]</td><td class="ci">+1.8 pp · p = 0.80</td></tr>
+    </tbody>
+  </table>
+
+  <p class="fragment fade-in" style="font-size:0.95em;margin-top:0.4em;">
+    Every CI overlaps the baseline. No paired difference is significant (McNemar &amp; paired bootstrap, α = 0.05).
+  </p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 20 · FIGURE                                                  -->
+<!-- ============================================================ -->
+<section class="fig-slide">
+  <div class="top">
+    <span class="eyebrow">Evaluation · Visual</span>
+    <h2>Every error bar overlaps.</h2>
+  </div>
+  <div class="fig-wrap">
+    <div class="figure-card">
+      <img src="accuracy_ci.png" alt="Per-mode accuracy with Wilson 95% CI">
+    </div>
+  </div>
+  <div class="caption-line">Per-mode accuracy · Wilson 95% CI · n = 80 · GPT-4o</div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 20c · PASS/FAIL BIAS FIGURE                                  -->
+<!-- ============================================================ -->
+<section class="fig-slide">
+  <div class="top">
+    <span class="eyebrow">Evaluation · Class-Conditional Errors</span>
+    <h2>All modes share a pass-oriented bias.</h2>
+  </div>
+  <div class="fig-wrap">
+    <div class="figure-card">
+      <img src="passfail_bias.png" alt="Per-class accuracy split by ground-truth label">
+    </div>
+  </div>
+  <div class="caption-line">Per-class accuracy · GPT-4o · attaching memory does not correct the bias</div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 21 · THE POISONING ARTIFACT                                  -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Evaluation · A Caught Artifact</span>
+  <h2>What looked like a collapse, wasn't.</h2>
+
+  <div class="before-after">
+    <div class="ba-box was fragment fade-in">
+      <span class="ba-tag">Un-audited harness</span>
+      <div class="ba-stat">21.2%</div>
+      <div class="ba-note">Network errors silently counted as wrong answers.</div>
+    </div>
+    <div class="ba-arrow fragment fade-in">→</div>
+    <div class="ba-box now fragment fade-in">
+      <span class="ba-tag">Audited harness · retried</span>
+      <div class="ba-stat">65.4%</div>
+      <div class="ba-note">Identical to oracle. No collapse.</div>
+    </div>
+  </div>
+
+  <p class="fragment fade-in" style="margin-top:0.6em;font-style:italic;color:var(--accent);font-family:'Fraunces',serif;font-size:1.1em;max-width:88%;">
+    A spurious fragility — like a spurious benefit — is a property of the harness, not the system.
+  </p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 23 · BUILD #5 — RELIABILITY HARNESS                          -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · Build #5 · The Reliability Harness</span>
+  <h2>Three independent stress tests.</h2>
+
+  <div class="harness-grid">
+    <div class="harness-cell good fragment fade-in">
+      <span class="htag">Experiment B</span>
+      <div class="hname">Stochastic Stability</div>
+      <div class="hresult">95% &nbsp; 90%</div>
+      <div class="hbody">Same item, judged twice. MAJ and MCTS-Judge+Memory agree with themselves on the great majority of items. <strong>The modes are stable.</strong></div>
+    </div>
+    <div class="harness-cell neutral fragment fade-in">
+      <span class="htag">Experiment C</span>
+      <div class="hname">Label-Flip Discrimination</div>
+      <div class="hresult">65% / 70% / 65%</div>
+      <div class="hbody">Invert PASS↔FAIL and check the judge flips with it. All modes discriminate above chance — and similarly to each other.</div>
+    </div>
+    <div class="harness-cell warn fragment fade-in">
+      <span class="htag">Experiment D</span>
+      <div class="hname">Defense Filter</div>
+      <div class="hresult">64.8% &nbsp; 65.0%</div>
+      <div class="hbody">Similarity-threshold filter under 50% poisoned memory. <strong>The filter does not help.</strong> An honest negative result, reported as such.</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 23a · HARNESS WALKTHROUGH                                    -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Proposed Solution · Reliability Harness · Walkthrough</span>
+  <h2>How each experiment runs.</h2>
+
+  <div class="walkthrough">
+    <div class="wt-step input fragment fade-in">
+      <div class="wt-label">Stability · B</div>
+      <div class="wt-body">
+        For each item: judge it <strong>twice</strong> with the same memory.<br>
+        <em>Measure:</em> &nbsp; agreement rate. &nbsp; <span style="color:var(--mute)">"Does the system give the same answer to the same question?"</span>
+      </div>
+    </div>
+    <div class="wt-step retrieve fragment fade-in">
+      <div class="wt-label">Label-Flip · C</div>
+      <div class="wt-body">
+        For each item: generate an <em>inverted</em> response (LLM rewrites it to clearly fail), then judge the inverted version.<br>
+        <em>Measure:</em> &nbsp; how often the verdict correctly flips PASS → FAIL.
+      </div>
+    </div>
+    <div class="wt-step synth fragment fade-in">
+      <div class="wt-label">Defense · D</div>
+      <div class="wt-body">
+        Build a <strong>50%-poisoned memory</strong>. Compare two configurations: judge with the raw poisoned memory, vs. judge with a <em>similarity-threshold filter</em> applied on retrieved nodes.<br>
+        <em>Measure:</em> &nbsp; does the filter recover accuracy?
+      </div>
+    </div>
+    <div class="wt-step output fragment fade-in">
+      <div class="wt-label">Verdicts</div>
+      <div class="wt-body">
+        <span style="color:var(--good)">B: 95% / 90% — modes are stable.</span> &nbsp;
+        <span style="color:var(--ink)">C: 65% / 70% / 65% — all modes discriminate.</span> &nbsp;
+        <span style="color:var(--warn)">D: 64.8% vs 65.0% — the filter does not help.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 23b · HARNESS RESULTS FIGURE                                 -->
+<!-- ============================================================ -->
+<section class="fig-slide">
+  <div class="top">
+    <span class="eyebrow">Proposed Solution · Reliability Harness · Visual</span>
+    <h2>Stability · discrimination · defense.</h2>
+  </div>
+  <div class="fig-wrap">
+    <div class="figure-card">
+      <img src="harness_results.png" alt="Reliability harness results: stability, label-flip, defense filter">
+    </div>
+  </div>
+  <div class="caption-line">Three orthogonal reliability experiments · audited protocol</div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 24 · DIVIDER · STAGE 6 — UNDERSTANDING                       -->
+<!-- ============================================================ -->
+<section class="divider">
+  <div class="roman">Findings · Discussion</div>
+  <h2>Why no help, no harm.</h2>
+  <div class="sub-after">A null result is only credible if it is <em>explained</em>.</div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 25 · WHY                                                     -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Discussion · Mechanism</span>
+  <h2>Three pieces of evidence.</h2>
+  <ul class="big-list">
+    <li class="fragment fade-in"><span class="ord">EVIDENCE I</span>Oracle labels don't beat self-written.</li>
+    <li class="fragment fade-in"><span class="ord">EVIDENCE II</span>Bare schema matches the full schema.</li>
+    <li class="fragment fade-in"><span class="ord">HYPOTHESIS</span>GPT-4o sits <em>near its reasoning ceiling</em> on this task.</li>
+    <li class="fragment fade-in"><span class="ord">TEST</span>A weaker judge model — future work.</li>
+  </ul>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 25b · STRUCTURE ABLATION FIGURE                              -->
+<!-- ============================================================ -->
+<section class="fig-slide">
+  <div class="top">
+    <span class="eyebrow">Discussion · Evidence II</span>
+    <h2>Bare schema = full schema.</h2>
+  </div>
+  <div class="fig-wrap">
+    <div class="figure-card">
+      <img src="structure_ablation.png" alt="Structure ablation: stateless vs bare memory vs full 5-node graph">
+    </div>
+  </div>
+  <div class="caption-line">Stateless · bare memory (Policy + Attempt) · full 5-node typed graph · Wilson 95% CI</div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 25d · COST / LATENCY                                         -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Discussion · Cost of the MCTS Modes</span>
+  <h2>The cost trade-off.</h2>
+
+  <table class="modes-table">
+    <thead>
+      <tr><th>Mode</th><th>Accuracy</th><th>Mean Latency</th><th>vs. Stateless</th></tr>
+    </thead>
+    <tbody>
+      <tr class="baseline fragment fade-in"><td class="mode">Stateless</td><td class="acc">70.0%</td><td class="ci">3.6 s</td><td class="ci">— baseline —</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MAJ (memory)</td><td class="acc">65.0%</td><td class="ci">4.5 s</td><td class="ci">1.3×</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MCTS-Judge</td><td class="acc">70.0%</td><td class="ci">31.8 s</td><td class="ci red">8.8×</td></tr>
+      <tr class="fragment fade-in"><td class="mode">MCTS-Judge + Memory</td><td class="acc">71.8%</td><td class="ci">33.3 s</td><td class="ci red">9.2×</td></tr>
+    </tbody>
+  </table>
+
+  <p class="fragment fade-in" style="font-style:italic;color:var(--accent);font-family:'Fraunces',serif;font-size:1.1em;margin-top:0.4em;">
+    MCTS modes cost <strong>~9× more latency</strong> for <strong>no significant accuracy gain</strong>.<br>
+    <span style="font-size:0.85em;color:var(--ink-soft);font-style:normal;">Hence: reported as <em>exploratory</em>, not recommended.</span>
+  </p>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 25e · THREATS TO VALIDITY                                    -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Discussion · Threats to Validity · §5.9</span>
+  <h2>Where the null holds — and where it doesn't.</h2>
+
+  <div class="build-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">Scope</div>
+      <div class="btitle">One judge model.</div>
+      <div class="bbody">All audited results use GPT-4o. A weaker model may have headroom for memory to help; a stronger one may not.</div>
+    </div>
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">Power</div>
+      <div class="btitle">n = 80, MDE ≈ 12–15 pp.</div>
+      <div class="bbody">Powered to detect the conventional 6–10 pp claim, and didn't. A small genuine effect of a few points cannot be excluded — hence "no effect detected at this scale".</div>
+    </div>
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">Domain</div>
+      <div class="btitle">One benchmark, one task.</div>
+      <div class="bbody">EvalsBench: rubric-graded QA in finance/startup. Open-ended or creative tasks may behave differently.</div>
+    </div>
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">What Holds</div>
+      <div class="btitle">The protocol itself.</div>
+      <div class="bbody">The leakage-free audit is benchmark- and model-agnostic. The methodological contribution is independent of the empirical finding.</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 26 · DIVIDER · CONTRIBUTIONS                                 -->
+<!-- ============================================================ -->
+<section class="divider">
+  <div class="roman">In Summary</div>
+  <h2>What this thesis contributes.</h2>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 27 · CONTRIBUTIONS                                           -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Contributions</span>
+  <h2>Four deliverables. One year.</h2>
+  <div class="build-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">01 · System</div>
+      <div class="btitle">MCTS-MAJ</div>
+      <div class="bbody">Typed Neo4j memory graph + 3-stage retrieval + two MCTS extensions. Six evaluation modes.</div>
+    </div>
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">02 · Methodology</div>
+      <div class="btitle">Leakage-free protocol</div>
+      <div class="bbody">Question-level split + frozen memory. Closes both leakage channels by construction.</div>
+    </div>
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">03 · Engineering</div>
+      <div class="btitle">Two-layer cryptographic audit</div>
+      <div class="bbody">SHA-256 fingerprint + runtime write-blocker. <em>Proves</em> the absence of leakage on every run.</div>
+    </div>
+    <div class="build-card fragment fade-in">
+      <div class="bcomp">04 · Finding</div>
+      <div class="btitle">A corrective null result</div>
+      <div class="bbody">Audited protocol overturns the +10 pp gain &amp; the poisoning collapse. Reliability harness shows the system is consistent — but the schema isn't doing extra work.</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 28 · VERDICT                                                 -->
+<!-- ============================================================ -->
+<section class="moment">
+  <div class="stage">The Verdict</div>
+  <div class="q">
+    Without the audited protocol,<br>
+    this thesis would have reported a <strong>+10 pp gain</strong><br>
+    and a <strong>catastrophic poisoning collapse</strong>.<br><br>
+    Both were artifacts.<br>
+    <em>The audit made the truth visible.</em>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 29 · FUTURE WORK                                             -->
+<!-- ============================================================ -->
+<section>
+  <span class="eyebrow">Future Work</span>
+  <h2>What comes next.</h2>
+  <ul class="big-list">
+    <li class="fragment fade-in"><span class="ord">→</span>Replicate on weaker &amp; stronger judges.</li>
+    <li class="fragment fade-in"><span class="ord">→</span>Scale n by 5–10× &nbsp;(MDE: 13 pp → 4 pp).</li>
+    <li class="fragment fade-in"><span class="ord">→</span>Release the audit as a reusable tool.</li>
+  </ul>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- 30 · THANK YOU                                               -->
+<!-- ============================================================ -->
+<section class="title-slide" style="justify-content:center;">
+  <div class="institution">Bachelor's Thesis Defense · 2 June 2026</div>
+  <h1 style="font-size:3.8em;">Thank you.</h1>
+  <div class="subtitle" style="font-size:1.2em;">Questions are welcome.</div>
+
+  <hr class="rule" style="max-width:60%;margin:2.5em 0 1.5em 0;">
+
+  <div style="font-family:'JetBrains Mono',monospace;font-size:0.65em;letter-spacing:0.1em;color:var(--mute);line-height:1.8;">
+    <div><strong style="color:var(--ink-soft);">CODE</strong> &nbsp; github.com/khushpatel2002/MCTS-MAJ</div>
+    <div><strong style="color:var(--ink-soft);">BENCHMARK</strong> &nbsp; EvalsBench · Vibrant Labs AI · Apache-2.0</div>
+    <div><strong style="color:var(--ink-soft);">METHODS</strong> &nbsp; Wilson CI · McNemar · paired bootstrap (10,000)</div>
+  </div>
+</section>
+
+
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    width: 1440, height: 900,
+    margin: 0.04, minScale: 0.2, maxScale: 2.0,
+    hash: true, slideNumber: false,
+    controls: false, progress: true,
+    transition: 'fade', backgroundTransition: 'none',
+    pdfSeparateFragments: false,
+  });
+  Reveal.on('slidechanged', e => { document.getElementById('pn').textContent = (e.indexh + 1); });
+  Reveal.on('ready', e => { document.getElementById('pn').textContent = (e.indexh + 1); });
+</script>
+
+</body>
+</html>

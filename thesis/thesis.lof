@@ -1,0 +1,20 @@
+\babel@toc {english}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Per-mode accuracy with Wilson 95\% confidence intervals on the leakage-free, audited test set. The error bars of every mode overlap with those of the stateless baseline.}}{28}{figure.5.1}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Paired accuracy differences between modes, computed on identical items, with bootstrap 95\% confidence intervals. An interval crossing the dashed zero line indicates a non-significant difference; all clean-memory comparisons do so.}}{34}{figure.5.2}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Per-mode confusion matrices on the leakage-free test set. The four modes share the same error structure, with more errors on failing responses than on passing ones.}}{35}{figure.5.3}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Per-class accuracy split by ground-truth label. Every mode is more accurate on passing responses than on failing ones; attaching memory does not correct this pass-oriented bias.}}{35}{figure.5.4}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Structure ablation: accuracy of the stateless baseline, a bare Policy-plus-Attempt memory, and the full five-node typed graph, with Wilson 95\% confidence intervals. The three intervals overlap.}}{36}{figure.5.5}%
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Cross-seed comparison of the stateless and memory-augmented modes over three random splits, with Wilson 95\% confidence intervals. The cross-seed spread of each mode is wider than the gap between modes.}}{36}{figure.5.6}%
+\contentsline {figure}{\numberline {5.7}{\ignorespaces Accuracy as a function of the memory poisoning rate, under the corrected, audited harness, with Wilson 95\% confidence interval bands. Neither mode shows a significant downward trend as the corruption rate rises.}}{37}{figure.5.7}%
+\contentsline {figure}{\numberline {5.8}{\ignorespaces Reliability harness results: stochastic stability, label-flip discrimination, and the defense filter under 50\% poisoned memory.}}{37}{figure.5.8}%
+\contentsline {figure}{\numberline {5.9}{\ignorespaces Cost-reliability frontier: accuracy against mean latency per evaluation (logarithmic scale), with Wilson 95\% confidence intervals. The MCTS modes cost roughly an order of magnitude more latency without a corresponding accuracy gain.}}{38}{figure.5.9}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

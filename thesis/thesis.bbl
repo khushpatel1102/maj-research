@@ -1,0 +1,227 @@
+\begin{thebibliography}{10}
+
+\bibitem{mt_bench2023}
+Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao
+  Zhuang, Zi~Lin, Zhuohan Li, Dacheng Li, Eric~P. Xing, et~al.
+\newblock Judging llm-as-a-judge with mt-bench and chatbot arena.
+\newblock In {\em NeurIPS Datasets and Benchmarks Track}, 2023.
+
+\bibitem{geval2023}
+Yang Liu, Dan Iter, Yichong Xu, Shuohang Wang, Ruochen Xu, and Chenguang Zhu.
+\newblock G-eval: Nlg evaluation using gpt-4 with better human alignment.
+\newblock {\em arXiv preprint arXiv:2303.16634}, 2023.
+
+\bibitem{judge_survey2024}
+Jiawei Gu, Xuhui Jiang, Zhichao Shi, Hexiang Tan, Xuehao Zhai, Chengjin Xu, Wei
+  Li, Yinghan Shen, Shengjie Ma, Honghao Liu, et~al.
+\newblock A survey on llm-as-a-judge.
+\newblock {\em arXiv preprint arXiv:2411.15594}, 2024.
+
+\bibitem{chateval2023}
+Chi-Min Chan, Weize Chen, Yusheng Su, Jianxuan Yu, Wei Xue, Shanghang Zhang,
+  Jie Fu, and Zhiyuan Liu.
+\newblock Chateval: Towards better llm-based evaluators through multi-agent
+  debate.
+\newblock {\em arXiv preprint arXiv:2308.07201}, 2023.
+
+\bibitem{llm_judge_agreement2024}
+Aman~Singh Thakur, Kartik Choudhary, Venkat~Srinik Ramayapally, Sankaran
+  Vaidyanathan, and Dieuwke Hupkes.
+\newblock Judging the judges: Evaluating alignment and vulnerabilities in
+  llms-as-judges.
+\newblock {\em arXiv preprint arXiv:2406.12624}, 2024.
+
+\bibitem{rag_original2020}
+Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir
+  Karpukhin, Naman Goyal, Heinrich Kuttler, Mike Lewis, Wen-tau Yih, Tim
+  Rocktaschel, et~al.
+\newblock Retrieval-augmented generation for knowledge-intensive nlp tasks.
+\newblock {\em NeurIPS}, 2020.
+
+\bibitem{memgpt2023}
+Charles Packer, Sarah Wooders, Kevin Lin, Vivian Fang, Shishir~G. Patil, Ion
+  Stoica, and Joseph~E. Gonzalez.
+\newblock Memgpt: Towards llms as operating systems.
+\newblock {\em arXiv preprint arXiv:2310.08560}, 2023.
+
+\bibitem{generative_agents2023}
+Joon~Sung Park, Joseph~C. O'Brien, Carrie~J. Cai, Meredith~Ringel Morris, Percy
+  Liang, and Michael~S. Bernstein.
+\newblock Generative agents: Interactive simulacra of human behavior.
+\newblock {\em ACM Symposium on User Interface Software and Technology (UIST)},
+  2023.
+
+\bibitem{reflexion2023}
+Noah Shinn, Federico Cassano, Edward Berman, Ashwin Gopinath, Karthik
+  Narasimhan, and Shunyu Yao.
+\newblock Reflexion: Language agents with verbal reinforcement learning.
+\newblock {\em NeurIPS}, 2023.
+
+\bibitem{rag_poisoning2024}
+Wei Zou, Runpeng Geng, Binghui Wang, and Jinyuan Jia.
+\newblock Poisonedrag: Knowledge corruption attacks to retrieval-augmented
+  generation of large language models.
+\newblock {\em USENIX Security Symposium}, 2024.
+
+\bibitem{data_contamination2024}
+Shuo Yang, Wei-Lin Chiang, Lianmin Zheng, Joseph~E. Gonzalez, and Ion Stoica.
+\newblock Rethinking benchmark and contamination for language models with
+  rephrased samples.
+\newblock {\em arXiv preprint arXiv:2311.04850}, 2023.
+
+\bibitem{benchmark_contamination2024}
+Chunyuan Deng, Yilun Zhao, Xiangru Tang, Mark Gerstein, and Arman Cohan.
+\newblock Investigating data contamination in modern benchmarks for large
+  language models.
+\newblock {\em Conference of the North American Chapter of the Association for
+  Computational Linguistics (NAACL)}, 2024.
+
+\bibitem{eval_leakage2024}
+Simone Balloccu, Patricia Schmidtova, Mateusz Lango, and Ondrej Dusek.
+\newblock Leak, cheat, repeat: Data contamination and evaluation malpractices
+  in closed-source llms.
+\newblock {\em Conference of the European Chapter of the Association for
+  Computational Linguistics (EACL)}, 2024.
+
+\bibitem{prometheus2023}
+Seungone Kim, Jamin Shin, Yejin Cho, Joel Jang, Shayne Longpre, Hwaran Lee,
+  Sangdoo Yun, Seongjin Shin, Sungdong Kim, James Thorne, et~al.
+\newblock Prometheus: Inducing fine-grained evaluation capability in language
+  models.
+\newblock {\em arXiv preprint arXiv:2310.08491}, 2023.
+
+\bibitem{llm_judge_bias2024}
+Peiyi Wang, Lei Li, Liang Chen, Zefan Cai, Dawei Zhu, Binghuai Lin, Yunbo Cao,
+  Qi~Liu, Tianyu Liu, and Zhifang Sui.
+\newblock Large language models are not fair evaluators.
+\newblock {\em arXiv preprint arXiv:2305.17926}, 2024.
+
+\bibitem{position_bias2024}
+Jiayi Ye, Yanbo Wang, Yue Huang, Dongping Chen, Qihui Zhang, Nuno Moniz, Tian
+  Gao, Werner Geyer, Chao Huang, Pin-Yu Chen, et~al.
+\newblock Justice or prejudice? quantifying biases in llm-as-a-judge.
+\newblock {\em arXiv preprint arXiv:2410.02736}, 2024.
+
+\bibitem{judge_calibration2024}
+Rickard Stureborg, Dimitris Alikaniotis, and Yoshihiko Suhara.
+\newblock Large language models are inconsistent and biased evaluators.
+\newblock {\em arXiv preprint arXiv:2405.01724}, 2024.
+
+\bibitem{active_rag2023}
+Zhengbao Jiang, Frank~F. Xu, Luyu Gao, Zhiqing Sun, Qian Liu, Jane Dwivedi-Yu,
+  Yiming Yang, Jamie Callan, and Graham Neubig.
+\newblock Active retrieval augmented generation.
+\newblock {\em arXiv preprint arXiv:2311.11829}, 2023.
+
+\bibitem{self_rag2023}
+Akari Asai, Zeqiu Wu, Yizhong Wang, Avirup Sil, and Hannaneh Hajishirzi.
+\newblock Self-rag: Learning to retrieve, generate, and critique through
+  self-reflection.
+\newblock {\em arXiv preprint arXiv:2310.11511}, 2023.
+
+\bibitem{uct2006}
+Levente Kocsis and Csaba Szepesvari.
+\newblock Bandit based monte-carlo planning.
+\newblock {\em European Conference on Machine Learning (ECML)}, 2006.
+
+\bibitem{mcts_survey2012}
+Cameron~B. Browne, Edward Powley, Daniel Whitehouse, Simon~M. Lucas, Peter~I.
+  Cowling, Philipp Rohlfshagen, Stephen Tavener, Diego Perez, Spyridon
+  Samothrakis, and Simon Colton.
+\newblock A survey of monte carlo tree search methods.
+\newblock {\em IEEE Transactions on Computational Intelligence and AI in
+  Games}, 4(1):1--43, 2012.
+
+\bibitem{alpha_go2016}
+David Silver, Aja Huang, Chris~J. Maddison, et~al.
+\newblock Mastering the game of go with deep neural networks and tree search.
+\newblock In {\em Nature}, volume 529, pages 484--489, 2016.
+
+\bibitem{test_time_scaling2024}
+Charlie Snell, Jaehoon Lee, Kelvin Xu, and Aviral Kumar.
+\newblock Scaling llm test-time compute optimally can be more effective than
+  scaling model parameters.
+\newblock {\em arXiv preprint arXiv:2408.03314}, 2024.
+
+\bibitem{chain_of_thought2022}
+Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia,
+  Ed~Chi, Quoc~V. Le, and Denny Zhou.
+\newblock Chain-of-thought prompting elicits reasoning in large language
+  models.
+\newblock {\em NeurIPS}, 2022.
+
+\bibitem{self_consistency2023}
+Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc Le, Ed~Chi, Sharan Narang,
+  Aakanksha Chowdhery, and Denny Zhou.
+\newblock Self-consistency improves chain of thought reasoning in language
+  models.
+\newblock {\em International Conference on Learning Representations (ICLR)},
+  2023.
+
+\bibitem{tree_of_thoughts2023}
+Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Thomas~L. Griffiths, Yuan
+  Cao, and Karthik Narasimhan.
+\newblock Tree of thoughts: Deliberate problem solving with large language
+  models.
+\newblock {\em NeurIPS}, 2023.
+
+\bibitem{react2023}
+Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan,
+  and Yuan Cao.
+\newblock React: Synergizing reasoning and acting in language models.
+\newblock {\em International Conference on Learning Representations (ICLR)},
+  2023.
+
+\bibitem{mcts_judge2025}
+Yi~Wang, Xin Chen, Ming Zhao, and Peng Liu.
+\newblock Mcts-judge: Test-time scaling in llm-as-a-judge for code correctness
+  evaluation.
+\newblock {\em arXiv preprint arXiv:2502.12468}, 2025.
+
+\bibitem{wilson1927}
+Edwin~B. Wilson.
+\newblock Probable inference, the law of succession, and statistical inference.
+\newblock {\em Journal of the American Statistical Association}, 22:209--212,
+  1927.
+
+\bibitem{mcnemar1947}
+Quinn McNemar.
+\newblock Note on the sampling error of the difference between correlated
+  proportions or percentages.
+\newblock {\em Psychometrika}, 12(2):153--157, 1947.
+
+\bibitem{bootstrap1993}
+Bradley Efron and Robert~J. Tibshirani.
+\newblock {\em An Introduction to the Bootstrap}.
+\newblock Chapman and Hall/CRC, 1993.
+
+\bibitem{neo4j2023}
+{Neo4j Inc.}
+\newblock Neo4j graph database: Vector search and graph indexes.
+\newblock \url{https://neo4j.com/docs/}, 2023.
+
+\bibitem{openai_embeddings2024}
+{OpenAI}.
+\newblock Openai text embeddings: text-embedding-ada-002.
+\newblock \url{https://platform.openai.com/docs/guides/embeddings}, 2024.
+
+\bibitem{hnsw2018}
+Yury~A. Malkov and Dmitry~A. Yashunin.
+\newblock Efficient and robust approximate nearest neighbor search using
+  hierarchical navigable small world graphs.
+\newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  2018.
+
+\bibitem{evalsbench2024}
+{Vibrant Labs AI}.
+\newblock Evalsbench: A benchmark for evaluating llm-as-a-judge on graded
+  question answering.
+\newblock \url{https://github.com/vibrantlabsai/EvalsBench}, 2024.
+\newblock Apache-2.0 licence.
+
+\bibitem{pydantic2024}
+{Pydantic Developers}.
+\newblock Pydantic: Data validation using python type hints.
+\newblock \url{https://docs.pydantic.dev/}, 2024.
+
+\end{thebibliography}

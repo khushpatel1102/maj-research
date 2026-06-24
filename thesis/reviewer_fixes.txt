@@ -1,0 +1,66 @@
+====================================================================
+REVIEWER FIXES — paste these into the Google Doc
+====================================================================
+Four edits. Each says WHERE it goes and gives the exact text.
+====================================================================
+
+
+--------------------------------------------------------------------
+FIX 1 — ABSTRACT
+--------------------------------------------------------------------
+In the Abstract, find this sentence:
+
+  "Under a conventional protocol, memory appeared to deliver large
+  gains; under the leakage-free, audited protocol, with GPT-4o on
+  eighty held-out samples, no configuration significantly
+  outperformed a single-pass stateless judge."
+
+REPLACE it with:
+
+  "Under a conventional protocol, memory appeared to deliver large
+  gains; under the leakage-free, audited protocol no configuration
+  significantly outperformed a single-pass stateless judge. This
+  null result is established for a single judge model, GPT-4o, on an
+  eighty-sample held-out set, and is therefore stated as 'no effect
+  was detected at this scale' rather than as a universal claim."
+
+
+--------------------------------------------------------------------
+FIX 2 — MINIMUM DETECTABLE EFFECT
+Goes in Chapter 3, section "Statistical Methodology" (3.6),
+as a NEW paragraph at the END of that section.
+--------------------------------------------------------------------
+
+  It is important to state what effect size this design can detect. With eighty paired test items, a McNemar test at the 0.05significance level reaches roughly eighty percent power only for adifference of about twelve to fifteen percentage points betweentwo modes, given the discordant-pair rates observed in theexperiments. The conventional, un-audited protocol suggested gainsof six to ten percentage points; a gain of that magnitude, if itwere genuine, would sit near or below this study's detectionthreshold. The null result reported in Chapter 5 should thereforebe read precisely: the audited experiments were powered to detecta large memory effect and did not find one, but they cannot ruleout a small genuine effect of a few percentage points. This is thereason the conclusions are framed as "no effect was detected atthis scale" rather than as proof that no effect exists, and it isthe reason the first item of future work is a substantially largerbenchmark.
+
+
+--------------------------------------------------------------------
+FIX 3 — "EXPLANATION IS A HYPOTHESIS"
+Goes in Chapter 5, section 5.7 "Discussion: Why Memory Neither
+Helped nor Harmed". Add this sentence at the END of the paragraph
+that begins "Why memory carries no usable signal here".
+--------------------------------------------------------------------
+
+  It should be stated plainly that this account is a hypothesis consistent with the evidence, not a directly tested result: the oracle-versus-self-written and bare-versus-full ablations are consistent with a judge operating near its reasoning ceiling, but the decisive test, a weaker judge model on which memory should help, is left to future work.
+
+
+--------------------------------------------------------------------
+FIX 4 — FIGURE 5.1 CAPTION
+The accuracy figure (per-mode accuracy with confidence intervals)
+shows seven bars, but the nearby table lists only four modes.
+Update the figure caption so a reader is not confused.
+--------------------------------------------------------------------
+
+REPLACE the current caption of the per-mode accuracy figure with:
+
+  "Per-mode accuracy with Wilson 95% confidence intervals on the leakage-free, audited test set. In addition to the four primary modes of Table 1, the figure also shows the bare-memory and oracle-memory variants discussed in Sections 5.4.2 and 5.4.3. The error bars of every mode overlap with those of the stateless baseline."
+
+
+====================================================================
+SUMMARY
+====================================================================
+  1. Abstract        - swap one sentence (n + single-model caveat)
+  2. Section 3.6     - add MDE paragraph at end
+  3. Section 5.7     - add one sentence (explanation = hypothesis)
+  4. Figure 5.1      - replace caption (accounts for 7 bars vs 4)
+====================================================================

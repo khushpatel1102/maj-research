@@ -1,0 +1,41 @@
+============================================================
+EMAIL TO DEPARTMENT OF EDUCATION — DEFENSE PRESENTATION
+Reply to their "Thesis defense" thread
+Deadline: 17:00, 2 June 2026 (TODAY)
+============================================================
+
+To:      education@innopolis.ru
+Subject: Re: Thesis defense — Presentation submission, Khush Patel (B22-DS-01)
+
+Dear Department of Education,
+
+As requested, please find attached my thesis defense presentation
+for the defense scheduled on 3 June 2026 in room 321.
+
+Student:        Patel Khush Pradipbhai
+Group:          B22-DS-01
+Program:        09.03.01 — Computer Science (Data Science and Artificial Intelligence)
+Thesis title:   Memory-Assisted "LLM as a Judge" via Knowledge Graphs
+                for Evaluating Agents
+Supervisor:     Bader Rasheed
+
+Thank you.
+
+Best regards,
+
+Khush Patel
+Innopolis University
+Kazan, Russia
+(+91) 987-974-1547
+(+7) 977-058-4123
+
+
+============================================================
+ATTACH:
+  /Users/khushpatel2002/detailed_research/defense/defense.pdf
+  (36 pages · 2.1 MB)
+
+SEND BEFORE: 17:00 today (2 June 2026)
+DEFENSE:     3 June 2026 — session starts 09:30 — Room 321
+GROUP:       B22-DS-01
+============================================================

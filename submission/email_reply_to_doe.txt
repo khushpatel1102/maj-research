@@ -1,0 +1,43 @@
+To: education@innopolis.ru
+Subject: Re: Final Thesis documents submission — Khush Patel (B22, Computer Science)
+
+Dear Department of Education,
+
+Thank you for the feedback. I have made both corrections:
+
+1. The annotation has been reduced to 5 pages and restructured to match the methodical recommendations (title page, contents, foreword, brief description of the main part, conclusion, references).
+2. The table captions in the thesis have been formatted according to the methodical recommendations (placed above each table, centered).
+
+Please find the updated documents attached.
+
+Best regards,
+
+Khush Patel
+Innopolis University
+Kazan, Russia
+(+91) 987-974-1547
+(+7) 977-058-4123
+
+
+====================================================================
+ATTACH THESE 3 FILES (all from detailed_research/submission/):
+====================================================================
+
+  1. Thesis_Khush_Patel.pdf
+     (55 pages, table captions fixed)
+
+  2. BS_Final_Thesis_Assessment_Khush_Patel.pdf
+     (3 pages, signed by supervisor and student)
+
+  3. Final_Annotation_Khush_Patel.pdf
+     (5 pages, DOE-compliant structure)
+     IMPORTANT: there are two annotation files in the submission
+     folder. The correct one is the NEWER file ("(1).pdf", with the
+     contents page populated). Before attaching, either:
+       - rename "Final_Annotation_Khush_Patel (1).pdf" to
+         "Final_Annotation_Khush_Patel.pdf" (after deleting/moving
+         the older one), or
+       - simply attach the "(1).pdf" file as-is.
+     Do NOT send the older annotation PDF — it has an empty
+     Оглавление placeholder.
+====================================================================

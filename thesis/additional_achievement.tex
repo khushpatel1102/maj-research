@@ -1,0 +1,135 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{setspace}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue,
+}
+
+\onehalfspacing
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+\vspace*{3cm}
+
+{\LARGE \textbf{MCTS-MAJ: Memory-Augmented LLM-as-a-Judge with Monte Carlo Tree Search}}
+
+\vspace{1.5cm}
+
+{\Large \textbf{Additional Achievement:\\ Open-Source Research Repository}}
+
+\vspace{2cm}
+
+{\large \textbf{Khush Patel}}
+
+\vspace{1.5cm}
+
+Spring Submission of the thesis in partial fulfillment\\
+of the requirements for the degree of\\
+\textit{Bachelor of Science in Computer Science}\\[0.5cm]
+under the supervision of Professor Bader Rasheed
+
+\vfill
+
+Innopolis University\\
+2026
+
+\end{center}
+\end{titlepage}
+
+\section*{Abstract}
+
+As an additional achievement for this thesis, the full research artifact has been published as an open-source repository at \url{https://github.com/khushpatel1102/maj-research}. The repository contains the complete MCTS-MAJ implementation, all benchmark scripts, evaluation results, and documentation required to reproduce the experiments reported in Chapters 3 and 4. This document describes the scope, contents, and public accessibility of the repository, in accordance with the ``participate in an open access project'' option of the Additional Achievement assignment, as agreed with the supervisor.
+
+\section{Project Overview}
+
+The repository \texttt{maj-research} is a public, open-source research codebase hosting the full implementation of MCTS-MAJ, a memory-augmented LLM-as-a-Judge framework. It was maintained in the open throughout the semester as the research progressed, with a public commit history that reflects the two-stage trajectory described in the thesis: first the MAJ core system, then the MCTS extension with the leakage-free evaluation protocol.
+
+The repository is published under an open-source license and is accessible without authentication, satisfying the ``open access project'' criterion for the Additional Achievement requirement.
+
+\subsection{Repository Link}
+
+\url{https://github.com/khushpatel1102/maj-research}
+
+\section{Repository Contents}
+
+The repository provides the complete artifact needed to reproduce every result reported in the thesis.
+
+\subsection{Source Code}
+
+The \texttt{src/} directory contains the full Python implementation organized into six modules:
+
+\begin{itemize}
+    \item \texttt{models.py}: Pydantic data classes for Policy, Attempt, Issue, Fix, and Semantic nodes, plus an embedding helper.
+    \item \texttt{graph\_manager.py}: Neo4j connection management, vector index creation, typed CRUD operations, and graph-level retrieval tools.
+    \item \texttt{judge.py}: single-pass judge used both statelessly and as the MAJ retrieval-conditioned judge.
+    \item \texttt{mcts\_judge.py}: MCTS reasoning layer with dynamic subtask generation and four structured-output schemas.
+    \item \texttt{mcts\_retrieval.py}: MCTS retrieval layer with seven graph-level actions.
+    \item \texttt{mcts\_pipeline.py}: composition wrappers for the six evaluation modes.
+\end{itemize}
+
+\subsection{Benchmark Scripts}
+
+Two benchmark runners are provided:
+
+\begin{itemize}
+    \item \texttt{benchmark\_mcts.py}: runs any of the six evaluation modes on a specified sample size and model. Supports ablations across modes and hyperparameter sweeps.
+    \item \texttt{benchmark\_leakage\_free.py}: implements the leakage-free evaluation protocol with four memory conditions (no memory, self-written, oracle, poisoned at 10 percent, 20 percent, and 50 percent).
+\end{itemize}
+
+\subsection{Data and Results}
+
+The \texttt{data/} directory contains the EvalsBench benchmark CSV files. The \texttt{results/} directory contains every per-sample output from every experiment reported in the thesis, one CSV per (mode, condition) pair. This includes the leakage-free stateless, MAJ, MCTS-Judge, and MCTS-Judge + Memory results on 80 test samples, and the poisoned memory runs at each of the three poisoning rates.
+
+\subsection{Documentation}
+
+The repository root contains a \texttt{README.md} describing the setup and invocation of each benchmark, together with several research documents:
+
+\begin{itemize}
+    \item \texttt{results/benchmark\_summary.md}: summary of all experimental results.
+    \item \texttt{update.md}: the Stage 1 progress report covering the seven MAJ experiments.
+    \item \texttt{reports/MAJ\_Research\_Progress\_Report.pdf}: formal Stage 1 progress report shared with the supervisor.
+\end{itemize}
+
+\subsection{Thesis Chapters}
+
+The thesis chapters themselves are also committed to the repository in both LaTeX source and compiled PDF form under the \texttt{thesis/} directory, enabling reviewers to match every claim in the written thesis against the exact code that produced it.
+
+\section{Reproducibility}
+
+Every experiment reported in the thesis can be reproduced from the repository. Specifically:
+
+\begin{itemize}
+    \item The dataset partition is deterministic given a random seed; the default seed is 42 and is fixed in all benchmark scripts.
+    \item All OpenAI model identifiers, MCTS hyperparameters, and retrieval thresholds are set as defaults in the respective modules and explicitly overridable from the command line.
+    \item The Neo4j schema is created automatically on first run through \texttt{graph\_manager.py}; no manual database setup is required beyond installing Neo4j locally.
+    \item Per-sample CSV outputs allow every reported accuracy number to be re-derived from raw predictions without rerunning the LLM calls.
+\end{itemize}
+
+This end-to-end reproducibility addresses one of the concerns raised in supervisor feedback about research rigor, and it is the primary reason for publishing the repository openly.
+
+\section{Public Accessibility and Impact}
+
+The repository is hosted on GitHub and visible without authentication. It has been linked from the thesis progress updates sent to the supervisor, making it discoverable by the examining committee and by any researcher who wishes to extend the MCTS-MAJ approach. Commit history is preserved, giving reviewers a full audit trail of how the system evolved over the semester, including the response to supervisor feedback (leakage-free protocol, dynamic subtask generation, oracle and poisoned memory experiments).
+
+By publishing the repository openly, this thesis contributes a reusable research artifact to the community studying LLM-as-a-Judge evaluation, memory-augmented reasoning, and Monte Carlo Tree Search applied to language models.
+
+\section{Summary}
+
+The open-source repository \texttt{khushpatel1102/maj-research} on GitHub is submitted as the Additional Achievement for this thesis. It contains the complete implementation, benchmarks, data, results, documentation, and thesis source files. The repository is public, permissively licensed, and enables end-to-end reproduction of every experiment reported in Chapters 3 and 4. This satisfies the ``participate in an open access project'' option of the Additional Achievement requirement.
+
+\end{document}

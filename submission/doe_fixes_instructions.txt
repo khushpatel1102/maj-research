@@ -1,0 +1,116 @@
+====================================================================
+TWO FIXES REQUESTED BY THE DEPARTMENT OF EDUCATION
+1. Reduce the annotation to 5 pages
+2. Format thesis table captions per methodical recommendations
+====================================================================
+
+
+--------------------------------------------------------------------
+FIX 1 — TABLE CAPTIONS IN THE THESIS  (Google Docs)
+--------------------------------------------------------------------
+
+What the methodical recommendations say:
+  "The name of the table is placed above the table in the center."
+
+What your thesis currently has:
+  - Captions ARE above each table (correct).
+  - Captions are JUSTIFIED (wrong). They must be CENTERED.
+
+The thesis has 4 tables that need this fix:
+  - Table 5.1 - Clean-memory results: leakage-free, audited, GPT-4o.
+  - Table 5.2 - Effect of memory provenance (leakage-free, audited).
+  - Table 5.3 - Cross-seed comparison (leakage-free, audited).
+  - Table 5.4 - Robustness to label corruption (leakage-free, audited).
+
+How to do it in Google Docs:
+  1. Open the thesis Google Doc.
+  2. Use Ctrl+F (Cmd+F) and search "Table 5.1".
+  3. Click on the caption line "Table 5.1 - Clean-memory results..."
+  4. In the toolbar, click "Center align" (or press Ctrl+Shift+E).
+  5. Repeat for "Table 5.2", "Table 5.3", "Table 5.4".
+
+  Also do the same for FIGURE captions to be consistent
+  (the methodical recommendations say figure names go UNDER the
+  figure on the LEFT, with the number). Your figure captions already
+  appear under the figures, so just check the alignment is left.
+
+  Tables: caption ABOVE, CENTERED.
+  Figures: caption BELOW, LEFT (with number).
+
+
+--------------------------------------------------------------------
+FIX 2 — REDUCE THE ANNOTATION TO 5 PAGES  (Google Docs)
+--------------------------------------------------------------------
+
+Your annotation is currently 20 pages. Target: 5 pages.
+
+You cannot just delete pages - you must condense the content while
+keeping all the required structural elements.
+
+The methodical recommendations state the annotation must include:
+  - title page
+  - contents (list of contents)
+  - foreword / introduction
+  - main content
+  - conclusion
+  - references
+
+Recommended page budget for 5 pages total:
+  Page 1: Title page                                    (~1 page)
+  Page 2: Contents (Оглавление)                          (~1 page)
+  Pages 3-4: Аннотация (abstract) + Введение + main      (~2 pages)
+             content condensed
+  Page 5: Заключение + Список литературы                 (~1 page)
+
+What to cut from the current 20-page version:
+
+  A. The detailed 1.1, 1.2, 1.3, 1.4 sub-sections of Введение:
+     condense all four into ONE paragraph (~5-7 sentences) covering
+     relevance, purpose, novelty, and practical significance
+     together. Drop the sub-section headings.
+
+  B. The Краткий обзор литературы chapter (currently 4 paragraphs):
+     condense to ONE short paragraph (3-4 sentences) listing the
+     main areas covered.
+
+  C. The Методология chapter (currently 4 paragraphs):
+     condense to ONE paragraph (4-5 sentences) summarising the
+     system, the leakage-free protocol, and the audit.
+
+  D. The Реализация chapter (currently 3 paragraphs):
+     condense to 2-3 sentences (one short paragraph).
+
+  E. The Оценка и обсуждение chapter (currently 4 paragraphs):
+     condense to ONE paragraph with the key numbers (70% stateless,
+     65% MAJ, no significant difference, poisoning collapse was an
+     artifact). 4-5 sentences.
+
+  F. Заключение: keep the existing first paragraph; drop the other
+     three. One paragraph total.
+
+  G. Список использованной литературы: KEEP ONLY 5-6 most important
+     references instead of 12. Drop the closing prose line.
+
+After these cuts:
+  - Introduction: ~1 paragraph
+  - Literature review: ~1 paragraph
+  - Methodology: ~1 paragraph
+  - Implementation: ~1 paragraph
+  - Evaluation: ~1 paragraph
+  - Conclusion: ~1 paragraph
+  - References: ~6 entries
+
+Total body: ~6 paragraphs + 6 references = comfortably fits in
+2-3 pages of body content. With title page + contents = 5 pages.
+
+
+--------------------------------------------------------------------
+ORDER OF OPERATIONS
+--------------------------------------------------------------------
+  1. Fix the 4 table captions in the thesis (5 minutes).
+  2. Trim the annotation in Google Docs to ~5 pages (~30 minutes).
+  3. Re-export both to PDF.
+  4. Send the reply email (see email_reply_to_doe.txt) with the
+     updated files attached.
+
+====================================================================

@@ -1,0 +1,448 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{setspace}
+\usepackage{verbatim}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue,
+}
+
+\onehalfspacing
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+\vspace*{3cm}
+
+{\LARGE \textbf{MCTS-MAJ: Memory-Augmented LLM-as-a-Judge\\ with Monte Carlo Tree Search}}
+
+\vspace{1.5cm}
+
+{\Large \textbf{Chapter 4: Implementation and Experiments}}
+
+\vspace{2cm}
+
+{\large \textbf{Khush Patel}}
+
+\vspace{1.5cm}
+
+Spring Submission of the thesis in partial fulfillment\\
+of the requirements for the degree of\\
+\textit{Bachelor of Science in Computer Science}\\[0.5cm]
+under the supervision of Professor Bader Rasheed
+
+\vfill
+
+Innopolis University\\
+2026
+
+\end{center}
+\end{titlepage}
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+This chapter documents the implementation of MCTS-MAJ and reports the experimental program in two stages. Stage~1 characterizes the MAJ core under a conventional evaluation protocol across seven experiments, and observes large apparent gains from memory: a capability-dependent lift of 6 to 10 percentage points for strong judges, cold-start accuracy rising from 78 to 91 percent with 100 seeded ground-truth examples, and incremental contributions from each retrieval stage. These Stage~1 results were obtained before the leakage-free protocol existed and are reported as the motivating observation for the rest of the thesis rather than as verified claims. Stage~2 re-examines the same question under a leakage-free protocol with a frozen-memory audit. With GPT-4o on 80 held-out samples, every audited configuration is run with memory frozen and a before-and-after fingerprint check. Under this corrected protocol the apparent advantage of memory does not survive: no configuration produces a statistically significant gain over the single-pass stateless baseline (stateless 70.0 percent; MAJ 65.0 percent; MCTS-Judge 70.0 percent; MCTS-Judge + Memory 71.8 percent, all confidence intervals overlapping). The audit additionally caught a real evaluation-leakage defect, and a retry-instrumented re-run showed that an apparent accuracy collapse under 50 percent memory poisoning, present in earlier un-audited data, was a measurement artifact of silent API errors and does not reproduce. The central result of the chapter is therefore methodological: a substantial part of the apparent benefit and the apparent fragility of memory in LLM-as-a-Judge evaluation is an artifact of evaluation protocol rather than of memory itself.
+
+\tableofcontents
+
+\chapter{Implementation and Experiments}
+
+\section{Experimental Setup}
+
+\subsection{Dataset and Splits}
+
+Experiments use the EvalsBench benchmark \cite{evalsbench2024} (160 samples, 80 unique questions, balanced pass/fail). Stage~1 experiments were conducted on 100 and 1000-sample variants of the dataset under a conventional protocol, in which memory could be updated during evaluation and the dataset was not partitioned by question. Stage~2 uses the leakage-free protocol described in Chapter~3, partitioning the benchmark by question into 40 training questions (80 samples) for memory construction and 40 test questions (80 samples) for evaluation, with the random seed fixed at 42. Because EvalsBench contains paired pass/fail versions of each question, a question-level split is necessary: a row-level split would place one version of a question in the training set and the other in the test set, allowing information to leak between them.
+
+\subsection{Evaluation Environment}
+
+\begin{itemize}
+    \item \textbf{Judge models}: GPT-4o is the primary judge for Stage~2. Stage~1 additionally covers gpt-4o-mini (a capability-threshold negative control) and Claude Sonnet (a strong external model).
+    \item \textbf{Embeddings}: \texttt{text-embedding-ada-002}, 1536 dimensions \cite{openai_embeddings2024}.
+    \item \textbf{Graph database}: Neo4j Community Edition with HNSW vector indexes \cite{neo4j2023}, running locally.
+    \item \textbf{MCTS hyperparameters}: \texttt{num\_rollouts}=2, \texttt{max\_depth}=3 in all Stage~2 MCTS modes; an earlier sweep to \texttt{num\_rollouts}=4 and \texttt{max\_depth}=5 produced matching or slightly worse accuracy at roughly four times the latency.
+    \item \textbf{Runtime}: evaluations are driven from a laptop; all LLM and embedding calls execute on OpenAI infrastructure, so wall-clock latency is dominated by network round-trips and server-side compute.
+\end{itemize}
+
+\section{Implementation Details}
+
+\subsection{Codebase Layout}
+
+The implementation is organized into a small set of modules under \texttt{src/}:
+\begin{itemize}
+    \item \texttt{models.py}: Pydantic data classes for Policy, Attempt, Issue, Fix, and Semantic nodes, together with an embedding helper.
+    \item \texttt{graph\_manager.py}: Neo4j connection management, vector index creation, typed CRUD, the graph-level tools consumed by MCTS-Retrieval, and the frozen-memory audit primitives (snapshot, diff, and the write-blocking context manager).
+    \item \texttt{judge.py}: the single-pass judge used both statelessly and as the MAJ retrieval-conditioned judge.
+    \item \texttt{mcts\_judge.py}: MCTS over dynamic evaluation subtasks, with four structured-output schemas.
+    \item \texttt{mcts\_retrieval.py}: MCTS over the graph-level tool set described in Chapter~3.
+    \item \texttt{mcts\_pipeline.py}: thin composition wrappers for the six evaluation modes.
+    \item \texttt{benchmark\_leakage\_free.py}: the leakage-free benchmark driver, including the audit wrapper and the retry-on-transient-error logic.
+    \item \texttt{analyze\_stats.py}, \texttt{make\_figures.py}, \texttt{reproduce\_all.py}: the statistical analysis, figure generation, and one-command reproduction pipeline.
+\end{itemize}
+
+\subsection{Building the Memory Graph}
+
+Three memory provenance regimes are implemented. In \textbf{self-written} mode, MAJ is run on each training sample; its verdict, reasoning, extracted issues, and proposed fixes are committed to the graph, with each issue classified into an existing or newly created Semantic category through a separate LLM call. In \textbf{oracle} mode, each training sample yields a Policy and an Attempt whose \texttt{is\_successful} flag is set to the dataset ground-truth label; no judge call is made, so the memory graph is guaranteed label-correct. In \textbf{poisoned} mode, oracle memory is used but with a fraction of labels deterministically flipped at one of three rates (10 percent, 20 percent, or 50 percent); the flip mask is derived from a fixed seed so that the same subset of samples is corrupted across runs.
+
+\subsection{Evaluation Procedure and the Frozen-Memory Audit}
+
+Each Stage~2 experiment proceeds in three phases. (1)~The graph is cleared and rebuilt for the condition under test. (2)~The test set is scored once per sample with the memory graph frozen. (3)~Per-sample records are written to \texttt{results/lf\_\{condition\}\_\{mode\}.csv} with fields \texttt{idx}, \texttt{topic}, \texttt{expected}, \texttt{predicted}, \texttt{correct}, and \texttt{latency\_s}.
+
+The freezing of memory during phase~(2) is enforced and verified by a two-layer audit. First, a snapshot of the graph is taken immediately before and immediately after evaluation; each snapshot records per-label node counts, per-relationship-type counts, and a SHA-256 fingerprint computed over the sorted node identifiers and edge triples. The before-and-after pair is diffed, and the run is reported as leakage-free only if the diff is empty and the two fingerprints are identical. The diff is written to \texttt{results/lf\_\{condition\}\_\{mode\}\_audit.json}. Second, for the duration of the evaluation, every write method on the graph manager (the \texttt{create\_*}, \texttt{link\_*}, \texttt{get\_or\_create\_*}, and \texttt{clear\_all} methods) is monkey-patched to raise a \texttt{FrozenMemoryViolation} exception. This blocks any leakage path at the source rather than detecting it after the fact.
+
+This audit was not merely a formality. When it was first applied to the MCTS-Judge + Memory mode, it failed: the evaluation path was calling \texttt{store\_mcts\_result}, which writes the just-evaluated test item back into the memory graph. This is exactly the kind of self-reinforcing leakage the protocol is designed to exclude. The defect was fixed by adding a \texttt{store=False} parameter to the evaluation-path functions, after which the audit passed for every mode. Every Stage~2 result reported below has a passing audit log.
+
+\subsection{Handling Transient Failures}
+
+LLM evaluations are network-bound, and long MCTS runs proved sensitive to transient API connection errors. In an early run, a mid-run network drop caused a block of samples to error; the original code recorded an errored sample as an incorrect answer, which silently depressed the measured accuracy. Two corrections were made. First, an exponential-backoff retry wrapper was added around every model call. Second, the error handling was corrected so that a sample that still fails after retries is recorded with a null verdict and excluded from the accuracy calculation, rather than being counted as wrong. Accuracy is therefore always computed over the completed samples only, and the number of completed samples is reported alongside each result. This correction is material: as Section~\ref{sec:poison} shows, an apparent catastrophic collapse in an earlier un-audited result was caused entirely by this mis-attribution of errored rows.
+
+\subsection{Structured Outputs}
+
+An early version of MCTS-Judge extracted decisions with regular expressions over free-text LLM output. This failed silently on roughly 15 to 20 percent of responses that deviated from the expected ``Decision: Yes/No'' template. All MCTS calls were subsequently migrated to OpenAI's \texttt{responses.parse} endpoint with Pydantic schemas:
+
+\begin{verbatim}
+class SubtaskDecision(BaseModel):
+    analysis: str
+    decision: bool
+
+class SelfAssessment(BaseModel):
+    useful: bool
+
+class SimulatedExecutionResult(BaseModel):
+    trace: str
+    passed: bool
+
+class GlobalVerdict(BaseModel):
+    verdict: bool
+    reasoning: str
+\end{verbatim}
+
+This eliminated parse failures without altering the semantics of any downstream step.
+
+\section{Stage 1: MAJ Core Experiments (Conventional Protocol)}
+
+Stage~1 characterizes the MAJ core along seven dimensions under a conventional evaluation protocol. These experiments were carried out in an earlier phase of the project, before the leakage-free protocol of Chapter~3 was designed, and they motivated that protocol. They are reported here as the \textit{starting observation} of the thesis: they show what memory appears to do when evaluation is not audited for leakage. Stage~2 then re-examines the same question under the corrected protocol. The Stage~1 numbers below are reproduced from the project's contemporaneous progress report; the per-sample logs for these early runs were not retained, so Stage~1 should be read as a qualitative motivation and the verified, reproducible claims of the thesis are those of Stage~2.
+
+\subsection{Experiment 1: Unit-Test Evaluation}
+
+\textbf{Setup.} MAJ is evaluated on a curated suite of code-evaluation unit tests, comparing stateless and memory-assisted modes.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lc}
+\toprule
+Setting & Accuracy \\
+\midrule
+Stateless (no memory) & 90\% \\
+With Memory & 100\% \\
+\textbf{Improvement} & \textbf{+10 points} \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 1: unit-test evaluation (conventional protocol).}
+\end{table}
+
+\textbf{Observation.} On structured tasks where past verdicts are directly reusable, memory appears to contribute a clean accuracy lift. This suggested an upper-bound regime where memory is trivially useful.
+
+\subsection{Experiment 2: Cross-Model Comparison}
+
+\textbf{Setup.} MAJ is tested across three judges spanning a range of reasoning capability on EvalsBench, at 100 and 1000 samples.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Judge model & Stateless & With memory & Improvement \\
+\midrule
+GPT-4o-mini (weak) & 60\% & 60\% & 0 (neutral) \\
+GPT-4o & 78\% & 85\% & +7 \\
+Claude Sonnet & 82\% & 88\% & +6 \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 2: cross-model comparison on EvalsBench (conventional protocol).}
+\end{table}
+
+\textbf{Observation.} Under the conventional protocol, memory appeared to yield gains of 6 to 10 points for capable judges and no gain for the weakest judge, suggesting a capability-threshold effect. As Stage~2 shows, this apparent gain is substantially reduced once leakage is controlled, so the capability-threshold reading should be treated as a hypothesis rather than an established result.
+
+\subsection{Experiment 3: Seeded Memory}
+
+\textbf{Setup.} The memory graph is pre-loaded with a fixed number of annotated ground-truth examples before evaluation (GPT-4o, 1000 test cases).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lc}
+\toprule
+Memory configuration & Accuracy \\
+\midrule
+No memory (stateless) & 78\% \\
+Organic memory (learned during eval) & 85\% \\
+Seeded with 50 ground-truth examples & 89\% \\
+Seeded with 100 ground-truth examples & 91\% \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 3: accuracy as a function of memory provenance (conventional protocol).}
+\end{table}
+
+\textbf{Observation.} Pre-loaded ground-truth memory appeared to outperform self-written memory at cold start. Note that the ``organic memory (learned during eval)'' row is exactly the configuration that motivated the leakage-free protocol: memory written during evaluation on a dataset of paired questions is a leakage path.
+
+\subsection{Experiment 4: Three-Stage Retrieval Ablation}
+
+\textbf{Setup.} Retrieval stages are enabled incrementally to attribute their contributions (GPT-4o, fixed memory).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lc}
+\toprule
+Configuration & Accuracy \\
+\midrule
+Stage 1 only (similar policies) & 80\% \\
+Stage 1 + Stage 2 (+ contrastive examples) & 83\% \\
+Stage 1 + Stage 2 + Stage 3 (full pipeline) & 85\% \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 4: incremental retrieval ablation (conventional protocol).}
+\end{table}
+
+\textbf{Observation.} Each stage appeared to contribute, with the largest single increment from contrastive examples. Stage~2's structure ablation revisits this question under the leakage-free protocol.
+
+\subsection{Experiment 5: Memory Scaling}
+
+\textbf{Setup.} The seeded-memory experiment is extended to larger seed sizes to identify diminishing returns.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lc}
+\toprule
+Seed size & Accuracy \\
+\midrule
+0 (stateless) & 78\% \\
+50 & 89\% \\
+100 & 91\% \\
+200 & approximately 93\% \\
+500 & approximately 94\% \\
+1000 & approximately 94 to 95\% \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 5: accuracy vs.\ memory size (conventional protocol).}
+\end{table}
+
+\textbf{Observation.} Under the conventional protocol, gains appeared largest up to roughly 200 seed examples and flattened thereafter.
+
+\subsection{Experiment 6: Cross-Domain Generalization}
+
+\textbf{Setup.} Memory is constructed from EvalsBench and evaluated against the DevAI dataset.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lc}
+\toprule
+Setting & Accuracy \\
+\midrule
+Stateless (on DevAI) & approximately 75 to 78\% \\
+With EvalsBench-trained memory & approximately 81 to 83\% \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 6: cross-domain transfer (conventional protocol).}
+\end{table}
+
+\textbf{Observation.} Memory gains appeared to survive a domain shift with modest attenuation.
+
+\subsection{Experiment 7: Cold-Start Learning Curve}
+
+\textbf{Setup.} MAJ's memory is initialized empty and grows organically as samples arrive (GPT-4o). Accuracy is measured incrementally.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lc}
+\toprule
+Memory size & Accuracy \\
+\midrule
+0 examples & 78\% \\
+50 examples & approximately 81\% \\
+100 examples & approximately 83\% \\
+200 examples & approximately 84\% \\
+500+ examples & 85\% \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 7: organic cold-start learning curve (conventional protocol).}
+\end{table}
+
+\textbf{Observation.} Under the conventional protocol, accuracy appeared to climb quickly and asymptote. Because this configuration updates memory during evaluation, it is also the clearest example of the leakage path that Stage~2 removes.
+
+\subsection{Summary of Stage 1 and the Transition to Stage 2}
+
+Taken at face value, Stage~1 tells a strong positive story: memory appears to lift capable judges by 6 to 10 percentage points, seeded memory appears to raise cold-start accuracy to above 90 percent, and each retrieval stage appears to contribute. However, several of these experiments either update memory during evaluation, or do not partition the paired EvalsBench questions, or both. Each of these is a route by which information about a test item can reach the judge before that item is scored. Stage~1 therefore does not establish that memory improves judging; it establishes that, under a conventional protocol, memory \textit{appears} to. The remainder of the chapter asks the sharper question: does the gain survive when the protocol is made leakage-free and the absence of leakage is audited?
+
+\section{Stage 2: Leakage-Free Experiments}
+
+Stage~2 re-examines the question under the leakage-free protocol of Chapter~3 and the frozen-memory audit of Section~2.3. All Stage~2 numbers use GPT-4o on 80 held-out samples with memory frozen during evaluation. Accuracies are reported with two-sided Wilson 95 percent confidence intervals; mode-versus-mode comparisons are paired on identical items, with bootstrap 95 percent confidence intervals (10{,}000 resamples) and exact McNemar tests. A difference is called statistically significant only when the McNemar p-value is below 0.05 \textit{and} the bootstrap confidence interval excludes zero. Where a run had samples that errored after retries, the number of completed samples is given and accuracy is computed over those samples only.
+
+\subsection{Experiment 8: Clean-Memory Comparison}
+
+\textbf{Setup.} Four modes are evaluated: stateless, MAJ alone, MCTS-Judge alone, and MCTS-Judge + Memory. Memory is self-written from the 80 training samples.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Mode & Accuracy [95\% CI] & $n$ & Mean latency \\
+\midrule
+Stateless & 70.0\% [59.2, 78.9] & 80 & 3.6 s \\
+MAJ (self-written memory) & 65.0\% [54.1, 74.5] & 80 & 4.5 s \\
+MCTS-Judge (no memory) & 70.0\% [59.2, 78.9] & 80 & 31.8 s \\
+MCTS-Judge + Memory & 71.8\% [61.0, 80.6] & 78 & 33.3 s \\
+\bottomrule
+\end{tabular}
+\caption{Stage 2 clean-memory results: leakage-free, audited, GPT-4o.}
+\label{tab:clean_memory}
+\end{table}
+
+\textbf{Finding.} Under the leakage-free, audited protocol the four modes are statistically indistinguishable. All four Wilson confidence intervals overlap substantially. The paired comparisons confirm this: MAJ versus stateless is $-5.0$ points (bootstrap CI $[-12.5, +1.3]$, McNemar $p = 0.29$); MCTS-Judge + Memory versus stateless is $+1.8$ points (McNemar $p = 0.80$); MCTS-Judge versus stateless is exactly $0.0$ points. No comparison is statistically significant. The headline of the earlier, un-audited version of this experiment --- that the combined MCTS-Judge + Memory mode was the only mode to beat stateless, at 68.8 versus 65.0 percent --- does not hold once the protocol is corrected: the single-pass stateless judge matches or exceeds every memory-augmented and tree-search configuration within confidence.
+
+The contrast with Stage~1 is the central observation. Stage~1, under a conventional protocol, suggested that memory lifts a GPT-4o judge by roughly 7 points. Stage~2, under the leakage-free protocol with an audited frozen memory, finds no significant lift at all. The most parsimonious explanation is that a substantial part of the Stage~1 gain was an artifact of evaluation leakage rather than a genuine effect of memory on judgment quality.
+
+\subsection{Experiment 9: Self-Written vs.\ Oracle Memory}
+
+\textbf{Setup.} The same test set is evaluated with memory built from (a) MAJ's own verdicts on the training set and (b) ground-truth labels directly.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Memory provenance & MAJ & MCTS-Judge + Memory \\
+\midrule
+Self-written & 65.0\% & 71.8\% \\
+Oracle & 60.0\% & 65.4\% \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 9: effect of memory provenance (leakage-free, audited).}
+\label{tab:oracle_self}
+\end{table}
+
+\textbf{Finding.} Replacing self-written labels with ground-truth oracle labels does not improve either mode; if anything both are slightly lower with oracle memory. For MAJ the paired difference is $-5.0$ points (McNemar $p = 0.22$) and for MCTS-Judge + Memory it is $-6.6$ points (McNemar $p = 0.27$); neither is significant. This is itself informative. If the judge were genuinely using the correctness of retrieved labels, perfectly correct oracle memory should help. That it does not is consistent with the Experiment~8 finding that the memory channel carries little usable signal for verdict accuracy on this benchmark.
+
+\subsection{Experiment 10: Poisoned Memory}
+\label{sec:poison}
+
+\textbf{Setup.} Oracle memory is corrupted by flipping a fraction of labels at three rates: 10 percent, 20 percent, and 50 percent. The same test set is then evaluated against the corrupted memory.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Poison rate & MAJ & MCTS-Judge + Memory \\
+\midrule
+0\% (oracle) & 60.0\% & 65.4\% \\
+10\% & 62.5\% & 67.5\% \\
+20\% & 63.7\% & 69.7\% \\
+50\% & 62.5\% & 65.4\% \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 10: robustness to label corruption (leakage-free, audited).}
+\label{tab:poisoned}
+\end{table}
+
+\textbf{Finding.} Under the audited protocol, neither mode shows a meaningful degradation as the poisoning rate rises. The MAJ profile is flat in the 60 to 64 percent band across all poison rates, and the MCTS-Judge + Memory profile is flat in the 65 to 70 percent band. The paired comparisons confirm that no poison-versus-oracle difference is significant: for MCTS-Judge + Memory, 50 percent poisoning versus oracle is a paired difference of $0.0$ points (McNemar $p = 1.00$).
+
+This result directly corrects an earlier, un-audited version of the same experiment, which reported that MCTS-Judge + Memory collapsed to 21.2 percent accuracy at 50 percent poisoning --- a 48.8-point drop below oracle --- and that this collapse was statistically significant. That earlier run was conducted before the retry-and-error-handling correction of Section~2.5. On inspection of the per-sample logs, the collapse was an artifact: a mid-run network outage caused a large block of samples to error, and the original code recorded each errored sample as an incorrect answer. The ``catastrophic poisoning collapse'' was therefore a property of the measurement harness, not of the system. Once errored samples are retried and, on persistent failure, excluded rather than counted as wrong, the 50 percent poisoning condition scores 65.4 percent, the same as oracle.
+
+The corrected finding is less dramatic but more honest, and it carries a methodological lesson that is one of the contributions of this thesis: an LLM-as-a-Judge evaluation harness that does not audit for leakage and does not handle transient API errors explicitly can report large effects --- both apparent gains and apparent collapses --- that do not exist.
+
+\subsection{Experiment 11: Structure Ablation}
+
+\textbf{Setup.} To test whether the elaborate five-node typed graph (Policy, Attempt, Issue, Fix, Semantic) earns its complexity, a ``bare'' memory was built using the same self-written labels but committing only Policy and Attempt nodes; no Issue, Fix, or Semantic extraction is performed. MAJ is then evaluated on the bare graph.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lc}
+\toprule
+Schema & Accuracy [95\% CI] \\
+\midrule
+Stateless (no memory) & 70.0\% [59.2, 78.9] \\
+Bare memory (Policy + Attempt only) & 66.2\% [55.4, 75.7] \\
+Full self-written (5-node typed graph) & 65.0\% [54.1, 74.5] \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 11: structure ablation (leakage-free, audited, seed 42).}
+\label{tab:ablation}
+\end{table}
+
+\textbf{Finding.} The bare Policy-plus-Attempt memory is statistically indistinguishable from both the full five-node schema and the stateless baseline. The extra extraction of Issue, Fix, and Semantic nodes does not produce a measurable verdict-accuracy gain on this benchmark. This is reported as a structural negative finding: it bounds what the typed schema buys for raw judging accuracy, and indicates that any value of the richer schema must lie in interpretability or downstream use rather than in direct retrieval-conditioned verdict accuracy.
+
+\subsection{Experiment 12: Cross-Seed Stability}
+
+\textbf{Setup.} To check that the Stage~2 conclusions are not an artifact of the particular held-out split, the stateless and MAJ modes were re-run on two additional random seeds (7 and 123), each with its own question-level split and frozen-memory audit.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Mode & Seed 42 & Seed 123 & Seed 7 \\
+\midrule
+Stateless (no memory) & 70.0\% & 70.0\% & 67.5\% \\
+MAJ (self-written) & 65.0\% & 67.5\% & 66.2\% \\
+MAJ (oracle) & 60.0\% & 66.2\% & 66.2\% \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 12: cross-seed comparison (leakage-free, audited).}
+\label{tab:multiseed}
+\end{table}
+
+\textbf{Finding.} Across all three seeds, MAJ tracks stateless within roughly two to five percentage points and never significantly exceeds it. The per-mode cross-seed range is about five points, which is wider than any of the mode-versus-mode differences observed on seed~42. This confirms that the Stage~2 conclusion --- no significant memory benefit --- is stable across splits, and that the small numerical differences between modes on a single seed fall inside the cross-seed noise band.
+
+\subsection{Experiment 13: Cost of MCTS}
+
+The MCTS modes are roughly nine to thirteen times slower than the single-pass modes per sample: a stateless evaluation averages 3.6 seconds and MAJ 4.5 seconds, whereas MCTS-Judge averages 31.8 seconds and MCTS-Judge + Memory 33.3 seconds. Over the 80-sample test set this is a few minutes for the single-pass modes against forty to fifty minutes for the MCTS modes. Because Stage~2 finds no significant accuracy advantage for the MCTS modes, this cost is not currently justified by an accuracy return; the MCTS extension is therefore reported as exploratory.
+
+\subsection{Summary of Stage 2}
+
+\begin{itemize}
+    \item Under the leakage-free, audited protocol, no configuration --- MAJ, MCTS-Judge, MCTS-Judge + Memory, or oracle memory --- produces a statistically significant accuracy gain over the single-pass stateless baseline.
+    \item Oracle (ground-truth-labelled) memory does not outperform self-written memory, indicating the memory channel carries little usable verdict signal on this benchmark.
+    \item Under the corrected harness, label poisoning does not cause a significant accuracy drop at any rate up to 50 percent. The catastrophic collapse reported in earlier un-audited data was a measurement artifact of mishandled API errors.
+    \item The five-node typed graph does not outperform a bare Policy-plus-Attempt memory.
+    \item The conclusions are stable across three random seeds.
+    \item The frozen-memory audit caught a real leakage defect during development, demonstrating its value as more than a formality.
+\end{itemize}
+
+\section{Scientific-Question Synthesis}
+
+The experimental program answers the thesis's governing question --- when does persistent memory help, corrupt, or contaminate LLM-as-a-Judge evaluation, and how can it be audited --- as follows.
+
+\paragraph{Memory's apparent benefit is largely a protocol artifact.} Under a conventional protocol (Stage~1), memory appears to lift a capable judge substantially. Under a leakage-free, audited protocol (Stage~2), that lift is not statistically detectable. The difference between the two is the evaluation protocol, not the memory system. The honest conclusion is therefore not ``memory improves judging'' but ``apparent memory gains in LLM-as-a-Judge evaluation must be audited for leakage before they can be believed.''
+
+\paragraph{Memory's apparent fragility is also a protocol artifact.} An un-audited harness reported that poisoned memory causes a catastrophic accuracy collapse. An audited, retry-instrumented re-run shows no significant degradation. Both the optimistic and the pessimistic readings of memory were exaggerated by the measurement instrument.
+
+\paragraph{The contribution is the audit.} The reproducible, defensible contribution of this thesis is the leakage-free protocol and the two-layer frozen-memory audit: a question-level split, a before-and-after SHA-256 fingerprint check, runtime write-blocking, and explicit transient-error handling. This instrument is what makes it possible to distinguish a genuine effect from an artifact, and applying it here shows that, on this benchmark, the genuine effect of memory on verdict accuracy is not distinguishable from zero.
+
+\section{Threats to Validity}
+
+\begin{itemize}
+    \item \textbf{Sample size.} Stage~2 uses 80 test samples; a single misclassification moves accuracy by 1.25 points. The Stage~2 conclusion is a null result, and a null result at this sample size means ``no effect was detected,'' not ``no effect exists.'' A larger benchmark could reveal a small genuine effect that 80 samples cannot resolve.
+    \item \textbf{Single judge model.} Stage~2 uses GPT-4o exclusively. A different model, in particular a weaker or a much stronger one, could behave differently; the Stage~1 cross-model observation, though un-audited, hints at this.
+    \item \textbf{Single benchmark.} EvalsBench is QA grading. The conclusions are stated for the QA-grading setting; richer task families such as agent-trajectory benchmarks \cite{tau_knowledge2026} and code correctness \cite{mcts_judge2025} are left to future work.
+    \item \textbf{Stage 1 evidence.} The Stage~1 per-sample logs were not retained, so the Stage~1 numbers are reproduced from a contemporaneous progress report and are treated as motivating observations rather than as verified claims. The verified claims of the thesis are those of Stage~2.
+    \item \textbf{Single poisoning pattern.} Experiment~10 flips labels uniformly at random. Structured adversarial poisoning may produce a different degradation curve.
+\end{itemize}
+
+\section{Summary}
+
+This chapter operationalized the framework specified in Chapter~3 and evaluated it in two stages. Stage~1, under a conventional protocol, observed large apparent benefits from memory and so motivated a more careful evaluation. Stage~2 introduced a leakage-free protocol and a two-layer frozen-memory audit, re-ran the experiments, and found that under correct measurement no configuration significantly outperforms a single-pass stateless judge, that oracle memory does not beat self-written memory, and that an apparent catastrophic collapse under memory poisoning was an artifact of a transient-error-handling defect rather than a real effect. The audit itself caught a genuine leakage defect during development. The chapter's central result is methodological: in LLM-as-a-Judge evaluation, both the apparent benefits and the apparent failure modes of persistent memory can be artifacts of the evaluation protocol, and a leakage-free audited protocol is necessary before any such claim can be trusted.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,551 @@
+============================================================================
+DEFENSE SCRIPT — 8 to 10 minutes — PLAIN WORDS VERSION
+Memory-Assisted "LLM as a Judge" via Knowledge Graphs for Evaluating Agents
+Khush Patel · B22-DS-01 · 3 June 2026 · Room 321 · 09:30 session
+============================================================================
+
+DELIVERY NOTES
+- 36 slides. Target pace ≈ 16 sec/slide → ≈ 9 minutes.
+- Every word is chosen to be easy to say under pressure.
+- Don't read. Look at the committee. Say it like you're explaining
+  to a friend who's smart but not in the field.
+- "(click)" = advance one bullet.
+- The 5 MONEY SLIDES — slow these down:
+    · slide 9   (the early surprise)
+    · slide 13  (the protocol)
+    · slide 16  (snapshot diff — the bug)
+    · slide 20  (audited results table)
+    · slide 34  (the verdict)
+- Breathe. The committee wants you to do well.
+
+============================================================================
+SLIDE 1 · TITLE  (~15 s)
+============================================================================
+"Good morning. My thesis is called Memory-Assisted LLM as a Judge via
+Knowledge Graphs for Evaluating Agents. It asks two questions: when does
+memory help an LLM judge, and how do we measure that in a way we can
+trust. The work was supervised by Professor Bader Rasheed."
+
+
+============================================================================
+SLIDE 2 · LITERATURE REVIEW  (~35 s · 3 clicks)
+============================================================================
+"Before I show what I built, I want to place this work in its context.
+It sits between three lines of prior research."
+(click)
+"The first — LLM-as-a-Judge. Papers like MT-Bench, G-Eval, and Prometheus
+showed that an LLM can grade another model's answers. The agreement with
+humans is high. But these judges also have biases — for example, the
+position of the answer, or its length. So we cannot fully trust them.
+The judge itself needs to be checked."
+(click)
+"The second — memory for models. RAG, MemGPT, Reflexion, Generative
+Agents. They all give a model a memory of past things. The idea is
+simple: with memory, the model should do better. But none of these
+papers ask what happens if the memory leaks into the test. They just
+trust it."
+(click)
+"The third — evaluation safety. Recent work, like Balloccu and
+PoisonedRAG, shows that scores get inflated when test data leaks into
+training or memory. This is a real, known problem."
+"So my work sits at the meeting point of these three. A judge, with
+memory, evaluated under strict checks."
+
+
+============================================================================
+SLIDE 3 · MOTIVATION  (~25 s · 3 clicks)
+============================================================================
+"Today, LLMs are graded by other LLMs."
+(click) "We use them to rank chatbots, to score agents, even as reward
+signals during training."
+(click) "But a stateless judge has no memory. It cannot be consistent
+across related questions."
+(click) "So the idea was — give the judge a memory of its past
+evaluations, and it should do better."
+
+
+============================================================================
+SLIDE 4 · BUILD #1 · TYPED KNOWLEDGE GRAPH  (~35 s · 6 clicks)
+============================================================================
+"My first build was the memory itself — a typed knowledge graph in Neo4j
+with five kinds of nodes."
+(click) "Policy — the grading rule the judge follows."
+(click) "Attempt — a past verdict that the judge gave."
+(click) "Issue — a specific problem the judge found in an attempt."
+(click) "Fix — a way to fix that problem."
+(click) "Semantic — an abstract category that groups similar issues."
+(click)
+"And four relationships link them — SATISFIES, CAUSES, RESOLVES, and
+ABSTRACTS_TO."
+
+
+============================================================================
+SLIDE 5 · END-TO-END EXAMPLE  (~60 s · 6 clicks)
+============================================================================
+"Before I show the example, one short note on how retrieval works in
+MAJ. It is a three-stage pipeline. For every input, the judge runs
+three queries on the graph, one after the other. Stage one looks for
+past attempts that are similar. Stage two looks for issues that were
+flagged in the past. Stage three looks for recurring semantic patterns.
+Each stage uses cosine similarity, with its own threshold. The three
+results are then combined into one block of context for the judge."
+
+"Now — here is what that pipeline actually produces on one real
+EvalsBench item."
+(click) "The input is a task about pre-money valuation of a startup,
+plus a candidate answer that talks about DCF, comparable companies,
+and the VC method."
+(click) "Stage one — past attempts that are similar. We get two that
+passed, and one that failed."
+(click) "Stage two — similar issues that the judge found before."
+(click) "Stage three — recurring patterns. For this item, we get the
+category 'incomplete methodology', which was seen in four past attempts."
+(click) "All three stages are put together into one block of context."
+(click) "GPT-4o then gets the task, the rubric, the retrieved context,
+and the candidate answer. It gives back a structured verdict — pass or
+fail, with a reason."
+
+
+============================================================================
+SLIDE 6 · THE LITERAL PROMPT  (~30 s · 1 click)
+============================================================================
+"This is what the judge actually sees, in text. I built it from my real
+code."
+(click)
+"On top — the task and the rubric. In the middle — the retrieved memory
+context, with examples, issues, and patterns. At the bottom — the
+candidate answer and the instruction. The memory part takes about half
+of the prompt."
+
+
+============================================================================
+SLIDE 7 · BUILDS #2 + #3 · MCTS EXTENSIONS  (~35 s · 3 clicks)
+============================================================================
+"Next, I added two extensions that use Monte Carlo Tree Search."
+(click)
+"Build two — MCTS-Retrieval. It does tree search over seven retrieval
+actions on the graph. Four of them follow multiple hops, going from one
+type of node to another."
+(click)
+"Build three — MCTS-Judge. It splits one evaluation into five to seven
+small subtasks. Each rollout picks the next subtask using UCT, and the
+final verdict comes from the best path."
+(click)
+"Together, this gave me six different evaluation modes. I could turn
+memory on or off, and search on or off, and compare."
+
+
+============================================================================
+SLIDE 8 · MCTS-JUDGE WALKTHROUGH  (~40 s · 5 clicks)
+============================================================================
+"Here is how MCTS-Judge runs end to end."
+(click) "Input — the same task and candidate answer."
+(click) "Decompose — the LLM generates five to seven small subtasks,
+like 'Does it cover DCF?' or 'Is the discount rate logic correct?'."
+(click) "Search — four rollouts, depth five. At each step, the next
+subtask is picked using UCT plus an LLM self-check."
+(click) "Aggregate — we take a majority vote on the best path, and a
+final synthesis over all subtasks."
+(click) "Verdict — pass or fail, with reasoning."
+
+
+============================================================================
+SLIDE 9 · TREE EXPANSION — ONE ROLLOUT  (~30 s · 1 click)
+============================================================================
+(click)
+"This is one real rollout, traced. The first pick is subtask one — DCF
+coverage — because Q is 0.92. From there, subtask three — discount rate.
+Then subtask five — comparable companies — gives a pass. Subtasks two,
+four, and six were not picked, because their scores were lower. The
+final path is one, three, five. The synthesis confirms pass."
+
+
+============================================================================
+SLIDE 10 · EARLY SIX-MODE BENCHMARK · SURPRISE  (~60 s · 7 clicks)
+============================================================================
+"Before I show this slide — let me set the context. The very first
+benchmarks I ran were small, and they looked promising. On a unit-test
+evaluation, accuracy went from 90 percent stateless to 100 percent with
+memory. On EvalsBench with GPT-4o, 78 to 85. On Claude, 82 to 88.
+Gains of 6 to 10 points. These were preliminary — not yet audited —
+but they made me expect that scaling up the system would only help more."
+
+"Then I added the two MCTS extensions and ran a fuller, six-mode
+benchmark — and got a surprise."
+(click) "Stateless — 60 percent."
+(click) "MAJ with memory — 63."
+(click) "MCTS-Judge alone — 56. Worse than stateless."
+(click) "MCTS-Judge with memory — 60. No gain."
+(click) "MCTS-Retrieval with the simple judge — 60."
+(click) "Full MCTS — both layers together — 46."
+(click)
+"This was only thirty samples, and the run was not audited. In the
+thesis, this is reported as a motivating observation, not as a verified
+result. But the picture was clear — something was wrong. Either the
+system was broken, or the measurement was."
+
+
+============================================================================
+SLIDE 11 · DIVIDER · PART 3 — CAN WE TRUST?  (~15 s)
+============================================================================
+"So I stopped, and went back to check the measurement. The first numbers
+were too good. The next numbers were too strange. Both said the same
+thing — maybe the benchmark itself is lying."
+
+
+============================================================================
+SLIDE 12 · TWO LEAKAGE CHANNELS  (~50 s · 2 clicks)
+============================================================================
+"I found two ways the test can leak."
+(click)
+"The first — paired item leakage. EvalsBench has paired items. Every
+question appears twice — once with a passing answer, once with a failing
+one. If the two halves end up on different sides of the split, then
+while the judge is grading the failing one, it can see the passing one
+in memory. It already knows the answer."
+(click)
+"The second — write-back leakage. If we update memory during the test,
+then the verdict on an early item shows up in memory when we grade a
+later, related one. Every early write affects every later read."
+
+
+============================================================================
+SLIDE 13 · BUILD #4 · LEAKAGE-FREE PROTOCOL  (~30 s · 2 clicks)
+============================================================================
+"To close both — I designed a new protocol."
+(click) "Fix one — split the benchmark by question, not by row. So both
+halves of a pair always stay on the same side."
+(click) "Fix two — freeze the memory during the test. Memory is built
+once, before the test, and after that it is read-only."
+"But a claim is not a proof. How can I show that the freeze really
+held?"
+
+
+============================================================================
+SLIDE 14 · THE TWO-LAYER AUDIT  (~40 s · 2 clicks)
+============================================================================
+"That is what the audit does. It has two layers."
+(click)
+"Layer one — after the run. I take a fingerprint of the graph using
+SHA-256, before and after. The run is accepted only if both fingerprints
+are the same."
+(click)
+"Layer two — during the run. I patch every write method on the graph.
+If anything tries to write, the system raises an exception immediately."
+
+
+============================================================================
+SLIDE 15 · AUDIT WALKTHROUGH  (~40 s · 5 clicks)
+============================================================================
+"To make it concrete —"
+(click) "Before — I take the snapshot, count nodes and edges, and hash
+to SHA-256."
+(click) "During — I block every write method."
+(click) "Run eval — all eighty test items are judged. Memory should not
+change."
+(click) "After — I take a second snapshot, and compare."
+(click) "Verdict — the run passes only if the fingerprints match AND no
+write was attempted. If either fails, the run is rejected."
+
+
+============================================================================
+SLIDE 16 · SNAPSHOT DIFF · MONEY SLIDE  (~50 s · 3 clicks)
+============================================================================
+"And the audit was not a formality. On the very first run, it caught a
+real bug."
+(click)
+"On the left — what the audit looks like when the run is clean. 412
+nodes, 412 nodes. Same number of edges. Fingerprints match."
+(click)
+"On the right — what actually happened. The graph grew. From 412 nodes
+to 492. From 831 edges to 1003. The fingerprints did not match."
+(click)
+"It turned out the eval path was writing the judged item back into
+memory. This is exactly the write-back leakage that the protocol is
+there to stop. Without the audit, this bug would have silently inflated
+every number in this thesis. I fixed it by adding a guard on the eval
+path."
+
+
+============================================================================
+SLIDE 17 · DIVIDER · EVALUATION  (~10 s)
+============================================================================
+"With the audit passing, I re-evaluated the system."
+
+
+============================================================================
+SLIDE 18 · DATASET  (~25 s · 4 clicks)
+============================================================================
+(click) "EvalsBench — 160 samples, in the finance and startup domain."
+(click) "80 unique questions, each appearing twice."
+(click) "50-50 balanced — half pass, half fail."
+(click) "Because of the pairing, it is a natural test for leakage."
+
+
+============================================================================
+SLIDE 19 · STATISTICAL METHODOLOGY  (~35 s · 3 clicks)
+============================================================================
+"Every accuracy in this thesis is reported with a Wilson 95 percent
+confidence interval. Mode comparisons are paired, and use the McNemar
+test."
+(click) "This is the Wilson formula — equation 3.4."
+(click) "And this is the McNemar p-value — equation 3.5."
+(click)
+"A difference is called significant only if McNemar p is below 0.05 AND
+the paired bootstrap interval excludes zero. Both must agree."
+
+
+============================================================================
+SLIDE 20 · AUDITED RESULTS · MONEY SLIDE  (~45 s · 5 clicks)
+============================================================================
+"Now — under the audited protocol — here are the four main modes."
+(click) "Stateless — 70 percent."
+(click) "MAJ with memory — 65 percent. Minus 5 points. McNemar p is
+0.29."
+(click) "MCTS-Judge alone — 70 percent. Same as stateless."
+(click) "MCTS-Judge with memory — 71.8 percent. McNemar p is 0.80."
+(click)
+"All confidence intervals overlap. No paired difference is significant.
+The simple stateless judge matches every other configuration I tried."
+
+
+============================================================================
+SLIDE 21 · FIGURE · ACCURACY CI  (~20 s)
+============================================================================
+"And in the figure — every error bar overlaps the stateless baseline.
+This is the visual form of the central finding."
+
+
+============================================================================
+SLIDE 22 · PASS / FAIL BIAS  (~25 s)
+============================================================================
+"One thing the audited run revealed — all four modes share the same
+bias. They get passing items right much more often than failing ones.
+Adding memory does not fix this. The bias comes from the judge model
+itself, not from memory."
+
+
+============================================================================
+SLIDE 23 · POISONING ARTIFACT · BEFORE/AFTER  (~50 s · 3 clicks)
+============================================================================
+"The audit also corrected a second false finding."
+(click)
+"In an early un-audited run, MCTS-Judge with memory looked like it
+crashed to 21.2 percent under 50 percent label poisoning. A 49-point
+drop. Big enough to be the headline of the thesis."
+(click)
+"In the audited run — with retry logic added on network errors — the
+same condition scores 65.4 percent. Same as oracle. No crash."
+(click)
+"So a fake fragility, just like a fake gain, can come from the
+measurement, not the system."
+
+
+============================================================================
+SLIDE 24 · BUILD #5 · RELIABILITY HARNESS  (~40 s · 3 clicks)
+============================================================================
+"Accuracy is only one number. So I built a reliability harness — three
+extra tests."
+(click) "Stochastic stability — judge the same item twice. MAJ agrees
+with itself 95 percent of the time. MCTS plus memory, 90 percent. The
+modes are stable."
+(click) "Label flip — I flip the response from pass to fail. The judge
+should flip too. All modes do this above chance."
+(click) "Defense filter — under 50 percent poisoned memory, does a
+similarity filter help? Answer — no, it does not. An honest negative
+result."
+
+
+============================================================================
+SLIDE 25 · HARNESS WALKTHROUGH  (~35 s · 4 clicks)
+============================================================================
+"To show how each one runs —"
+(click) "Stability — judge twice, count agreement."
+(click) "Label flip — generate an inverted answer, see if the verdict
+flips."
+(click) "Defense — build a poisoned memory, compare with and without
+the filter."
+(click) "Verdicts — stable yes, discrimination yes, defense filter no."
+
+
+============================================================================
+SLIDE 26 · HARNESS RESULTS FIGURE  (~30 s)
+============================================================================
+"And here you see the three results side by side, in one figure."
+
+"On the left — stochastic stability — agreement rates above 90 percent
+for both modes. The bars are tall, which means the system is consistent."
+
+"In the middle — label-flip discrimination — all three modes flip the
+verdict correctly when the response is inverted, well above the 50
+percent chance line."
+
+"On the right — defense filter — the two bars are almost the same
+height. With the filter on, accuracy is essentially identical to
+without it. So the filter does not help."
+
+"Together, this is one picture of three claims: the system is stable,
+it is responsive to the content, but the simple defense I tried does
+not mitigate poisoning. Two confirmations, one honest negative."
+
+
+============================================================================
+SLIDE 27 · DIVIDER · FINDINGS · DISCUSSION  (~10 s)
+============================================================================
+"A null result is only believable if we can explain it. So — why no
+help, and no harm?"
+
+
+============================================================================
+SLIDE 28 · THREE PIECES OF EVIDENCE  (~40 s · 4 clicks)
+============================================================================
+(click) "First — oracle labels do not beat self-written. If the judge
+was really using the labels from memory, perfect labels should help.
+They do not."
+(click) "Second — a bare schema works the same as the full schema. A
+memory with only two node types is as good as the full five-node graph."
+(click) "My explanation — GPT-4o is already near the top of its ability
+on this task. A strong judge has little room left for memory to add
+value."
+(click) "The real test would be a weaker judge model. That is future
+work."
+
+
+============================================================================
+SLIDE 29 · STRUCTURE ABLATION FIGURE  (~20 s)
+============================================================================
+"This figure shows the second piece of evidence. Stateless, bare memory,
+and full schema — all three intervals overlap. The extra structure does
+not add measurable value."
+
+
+============================================================================
+SLIDE 30 · COST / LATENCY  (~35 s · 4 clicks)
+============================================================================
+"One more thing — the cost of the MCTS modes."
+(click) "Stateless — 3.6 seconds per item."
+(click) "MAJ — 4.5 seconds. About the same."
+(click) "MCTS modes — about 33 seconds. About nine times slower."
+(click)
+"Nine times slower, with no significant gain. That is why MCTS is
+reported as exploratory, not recommended."
+
+
+============================================================================
+SLIDE 31 · THREATS TO VALIDITY  (~40 s · 4 clicks)
+============================================================================
+"I want to be honest about the limits of this result."
+(click) "Scope — I used one judge model, GPT-4o."
+(click) "Power — n equals 80. The test can detect a difference of about
+12 to 15 points. Smaller real effects cannot be ruled out."
+(click) "Domain — one benchmark, in one domain. Other tasks may behave
+differently."
+(click) "What still holds beyond this thesis — the protocol and the
+audit. They do not depend on the model or the benchmark."
+
+
+============================================================================
+SLIDE 32 · DIVIDER · IN SUMMARY  (~7 s)
+============================================================================
+"To wrap up — what this thesis contributes."
+
+
+============================================================================
+SLIDE 33 · FOUR CONTRIBUTIONS  (~50 s · 4 clicks)
+============================================================================
+(click) "One — MCTS-MAJ. A typed Neo4j memory graph, a three-stage
+retrieval pipeline, and two MCTS extensions. Six evaluation modes."
+(click) "Two — the leakage-free protocol. Split by question, freeze
+the memory. Closes both leakage channels by design."
+(click) "Three — the two-layer audit. SHA-256 plus runtime write-
+blocking. Proves the absence of leakage on every run."
+(click) "Four — a corrective null result. The audit overturned a
+plausible plus-ten-point gain, AND a fake poisoning crash. Both were
+artifacts. The harness shows the system is stable — but the schema is
+not doing extra work."
+
+
+============================================================================
+SLIDE 34 · VERDICT · MONEY SLIDE  (~30 s)
+============================================================================
+"To say it plainly — without the audited protocol, this thesis would
+have reported a ten-point memory gain, and a catastrophic poisoning
+crash. Both were artifacts. The audit made the truth visible. To make
+trustworthy claims about memory-augmented judging, we need trustworthy
+measurement first."
+
+
+============================================================================
+SLIDE 35 · FUTURE WORK  (~25 s · 3 clicks)
+============================================================================
+(click) "First — try this on weaker and stronger judges. That is the
+real test of the reasoning-ceiling idea."
+(click) "Second — scale the benchmark by five to ten times, so the test
+is sensitive to smaller effects."
+(click) "Third — release the audit as a reusable tool, model and
+benchmark agnostic. That is the contribution most likely to outlive
+this thesis."
+
+
+============================================================================
+SLIDE 36 · THANK YOU  (~10 s)
+============================================================================
+"Thank you. I am happy to take questions."
+
+
+============================================================================
+TIMING SUMMARY
+============================================================================
+Lit Review + Motivation  (slides 1–3)    :  ~1:15
+Part 1 — MAJ             (slides 4–6)    :  ~1:55
+Part 2 — MCTS            (slides 7–10)   :  ~2:35
+Part 3 — Trust + Audit   (slides 11–16)  :  ~3:25
+Evaluation               (slides 17–23)  :  ~3:30
+Part 4 — Harness         (slides 24–26)  :  ~1:30
+Discussion + Threats     (slides 27–31)  :  ~2:25
+Contributions + Close    (slides 32–36)  :  ~2:00
+============================================================================
+TOTAL (slow, every word) :  ~18 min  (too long)
+TOTAL (target pace)      :  ~10 min  (defense-ready)
+TOTAL (brisk, money slides only) :  ~8 min
+============================================================================
+
+HOW TO HIT 10 MINUTES
+- On bullet-list slides, let bullets appear quickly and speak about all
+  of them in one breath.
+- Stretch only the FIVE MONEY SLIDES (9, 13, 16, 20, 34).
+- If you finish ahead, that is fine. Calm finish beats rushed finish.
+
+
+EXPECTED QUESTIONS — ONE-LINE PLAIN ANSWERS
+============================================================================
+Q1. "Why does the audit matter if the result is null?"
+A.  "Because the audited null result corrects two earlier false findings.
+    Without the audit, the field would believe the wrong thing."
+
+Q2. "Why n=80? Can you draw conclusions from that?"
+A.  "n=80 is large enough to detect the 6 to 10 point claim that the
+    earlier protocol made. It cannot detect small effects of a few
+    points, and I say so on the threats slide."
+
+Q3. "Did you try a weaker judge model?"
+A.  "Not in this thesis. The reasoning-ceiling idea says memory should
+    help a weaker model. That is the first item in future work."
+
+Q4. "Why is MCTS reported as exploratory?"
+A.  "Because under the audited protocol it gives no significant accuracy
+    gain, while latency is nine times higher. Reporting it as recommended
+    would not be honest."
+
+Q5. "What is the contribution that survives beyond this benchmark?"
+A.  "The leakage-free protocol and the audit. They are independent of
+    the model and the benchmark. Any researcher can apply them."
+
+Q6. "Can an attacker still leak through the audit?"
+A.  "In theory, yes, through a channel that I do not model — for example,
+    timing side channels. I treat the audit as defence in depth against
+    the two channels I do model, not as a universal guarantee."
+
+
+GOOD LUCK.
+============================================================================

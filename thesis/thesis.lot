@@ -1,0 +1,18 @@
+\babel@toc {english}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Clean-memory results: leakage-free, audited, GPT-4o.}}{27}{table.5.1}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Effect of memory provenance (leakage-free, audited).}}{28}{table.5.2}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces Cross-seed comparison (leakage-free, audited).}}{29}{table.5.3}%
+\contentsline {table}{\numberline {5.4}{\ignorespaces Robustness to label corruption (leakage-free, audited).}}{30}{table.5.4}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {B.1}{\ignorespaces Evaluation modes.}}{48}{table.B.1}%
+\contentsline {table}{\numberline {B.2}{\ignorespaces Memory-building conditions.}}{48}{table.B.2}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {C.1}{\ignorespaces Complete audited results (GPT-4o, seed 42).}}{49}{table.C.1}%
+\addvspace {10\p@ }

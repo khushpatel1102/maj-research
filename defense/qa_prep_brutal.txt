@@ -1,0 +1,383 @@
+============================================================================
+DEFENSE Q&A PREP — BRUTAL PANEL SIMULATION
+Three professors. Three angles of attack.
+Read every question. Memorize every one-line answer.
+============================================================================
+
+The three personas:
+
+  PROF A — THE STATISTICIAN
+    Cares about: power, significance, sample size, multiple comparisons,
+    methodology rigour. Will ask: "could you actually detect anything?"
+
+  PROF B — THE SYSTEMS / ENGINEERING PROFESSOR
+    Cares about: scope, cost, correctness, reproducibility, what's novel.
+    Will ask: "what did you build that anyone else couldn't?"
+
+  PROF C — THE PHILOSOPHER / META-CRITIC
+    Cares about: framing, claims, intellectual honesty, what this work
+    actually means. Will ask: "do you really know what you think you know?"
+
+
+============================================================================
+PROF A · THE STATISTICIAN
+============================================================================
+
+Q1. "Your n is 80. With McNemar at n=80, you can barely detect a
+12-point difference. Why did you not collect more data?"
+A.  "Sample size was bounded by EvalsBench — 160 paired items, 80
+    questions, half-half split. Increasing n means a larger benchmark,
+    which is the first item of future work. n=80 is large enough to
+    detect the 6-to-10 point claim the conventional protocol made, so
+    it is large enough to refute that specific claim — which is the
+    test the thesis runs."
+
+Q2. "Wilson CI assumes Bernoulli trials. Your trials are not
+independent — they are paired. Why is Wilson appropriate here?"
+A.  "Wilson is used for each mode's own accuracy estimate, where the
+    Bernoulli assumption applies item by item. For comparing two
+    modes I use the paired McNemar test, which conditions on
+    discordant pairs and does not assume independence between the
+    two modes."
+
+Q3. "You ran six modes. You're doing multiple comparisons. Did you
+correct for that?"
+A.  "I declare a difference significant only when McNemar p is below
+    0.05 AND the paired bootstrap interval excludes zero. That joint
+    rule is conservative. I did not apply Bonferroni explicitly,
+    because every primary comparison fails to reject already — adding
+    correction would only widen the gap."
+
+Q4. "Your bootstrap resamples are paired. How many resamples? Did
+you check stability?"
+A.  "Ten thousand resamples. I checked stability by re-running with a
+    different seed and the CI endpoints moved by less than 0.5
+    percentage points. The intervals reported in the thesis are
+    stable to that resolution."
+
+Q5. "Your MDE is 12 to 15 points. So you cannot rule out a small
+real effect. Is your null result a real null, or just an under-powered
+study?"
+A.  "It is a real null for the size of effect the prior literature
+    claimed. The 6-to-10 point gain that the un-audited protocol
+    reported is fully inside my detection range, and it disappears
+    under the audited protocol. I cannot rule out a smaller genuine
+    effect of a few points — and I say so on the threats-to-validity
+    slide."
+
+Q6. "You retried failed API calls. How many samples were excluded
+because of persistent failures? What if those samples are systematically
+different?"
+A.  "Across the audited runs, the number of permanently failed samples
+    is at most one or two per condition, recorded in the per-sample
+    CSV. They are excluded from the denominator. If those one or two
+    items were systematically different, the maximum impact on
+    accuracy would be about 1.5 percentage points — well below the
+    significance threshold."
+
+Q7. "Why three seeds and not more? Three seeds is barely enough."
+A.  "Three seeds is enough to show that the per-mode spread across
+    seeds is wider than the gap between modes — which is the
+    methodological point. More seeds would refine the estimate, not
+    change the qualitative conclusion. It is also in future work."
+
+Q8. "The paired bootstrap assumes exchangeability. Justify."
+A.  "Exchangeability holds because the same test items are scored by
+    both modes, and I resample item-pairs, not individual mode-scores.
+    This is the standard paired bootstrap on the difference statistic."
+
+Q9. "You report 70% accuracy for stateless. That's not great. Why
+should we trust the judge at all?"
+A.  "70 percent is a property of GPT-4o on this benchmark, not of my
+    method. The thesis is not about absolute accuracy — it is about
+    whether memory significantly changes that accuracy. And the
+    reliability harness shows the judge is stable and discriminates
+    correctly above chance."
+
+
+============================================================================
+PROF B · THE SYSTEMS / ENGINEERING PROFESSOR
+============================================================================
+
+Q10. "What is genuinely novel here? Memory-augmented systems exist.
+LLM-as-a-judge exists. Audits exist. What's new?"
+A.  "Three things. One — the combination: a typed-graph memory used by
+    a judge, evaluated under a protocol that closes both leakage
+    channels by construction. Two — the audit itself: SHA-256 plus
+    runtime write-blocking, which to my knowledge is the first audit
+    that proves the absence of leakage on every run, not just asserts
+    it. Three — a corrective empirical finding that the field had not
+    surfaced before."
+
+Q11. "Your typed graph has five node kinds. Why these five and not
+others? Was the ontology validated?"
+A.  "These five emerged from the structure of evaluation itself — a
+    rule (Policy), an outcome (Attempt), what went wrong (Issue),
+    what fixes it (Fix), and a category (Semantic). I did not formally
+    validate this ontology against a corpus of judges. The bare-schema
+    ablation in chapter 5 suggests that for THIS judge, the extra
+    structure is not adding value. A weaker judge might benefit more —
+    that is future work."
+
+Q12. "Why Neo4j? Why not a simpler vector database?"
+A.  "Two reasons. One — typed relationships, which a flat vector store
+    does not give. Two — multi-hop traversals, which MCTS-Retrieval
+    uses. For pure cosine retrieval, a flat store would have been
+    enough. For the typed graph, Neo4j is the natural fit."
+
+Q13. "Your audit catches writes to the graph. What about reads with
+side effects? What about a model that uses the retrieved content to
+influence later behavior even without writing?"
+A.  "Read-with-side-effect leakage is exactly what the question-level
+    split closes. The frozen-memory audit closes write-back leakage.
+    The two together close the two specific channels I identified.
+    I do not claim to close all conceivable channels — for example,
+    timing side channels — and I say so on the threats slide."
+
+Q14. "You used GPT-4o through an API. That is not reproducible. How
+would another researcher reproduce your results next year, after the
+model is deprecated?"
+A.  "I pin the model version in every API call. All per-sample inputs
+    and outputs are stored in the open repository. If the model is
+    deprecated, the per-sample CSVs remain — the analysis is
+    deterministic from there. Re-running the model is not strictly
+    needed to reproduce my statistical claims."
+
+Q15. "Your MCTS-Judge runs 4 rollouts at depth 5. Why those numbers?
+Did you sweep them?"
+A.  "Yes. An earlier sweep to 4 rollouts and depth 5 gave no
+    significant accuracy benefit over 2 rollouts at depth 3, at four
+    times the cost. The current configuration is the smallest one
+    that gives the system room to search without being prohibitively
+    slow."
+
+Q16. "MCTS adds 9x latency for no gain. So why include it in the
+thesis at all?"
+A.  "Because the thesis is not 'recommend MCTS' — it is 'evaluate
+    memory-augmented judging including the exploratory directions'.
+    The MCTS components are reported as exploratory, and the null
+    result on them is itself useful. It tells the field that test-time
+    search on a single judge model, on this kind of task, does not
+    pay off."
+
+Q17. "The reliability harness is three independent experiments. Why
+those three and not, say, adversarial inputs or out-of-distribution
+testing?"
+A.  "Those three address the three most direct properties of a judge
+    that accuracy alone hides: does the judge repeat itself (stability),
+    does it actually respond to the content (label-flip), can it be
+    defended after poisoning (filter). Adversarial inputs and OOD are
+    additional axes, and they are reasonable extensions — but they
+    were beyond the scope of this thesis."
+
+Q18. "How long does the full reproduction take? If I clone the repo
+right now, when do I see results?"
+A.  "About two hours on a single machine with API access. The
+    reproduce_all.py script runs every audited mode, every poison
+    condition, the harness, and regenerates every figure and statistic
+    in the thesis."
+
+Q19. "You did not implement defenses that work. So your defense filter
+finding is negative. Why is that useful?"
+A.  "Because a negative result on a defense, reported honestly, prevents
+    other researchers from claiming the same filter without testing
+    it. The thesis says: this specific filter does not help. It does
+    not say: no filter can ever help. That is a tight, useful claim."
+
+
+============================================================================
+PROF C · THE PHILOSOPHER / META-CRITIC
+============================================================================
+
+Q20. "You say the audit makes the truth visible. But the audit is YOUR
+artifact. How do we know it is not itself biased — that it is not
+designed to produce the result it produced?"
+A.  "Two ways. One — the audit's outputs are mechanical: a SHA-256 hash
+    and an exception. They are not interpreted by me; they pass or
+    fail deterministically. Two — the audit was built BEFORE the
+    audited results were generated, and it found a real bug on its
+    first run, which I had not anticipated. If it were designed to
+    confirm a hypothesis, it would not have failed on my own code."
+
+Q21. "Your headline finding is a null. Null results are usually not
+publishable. Why is yours worth defending?"
+A.  "Because it is a corrective null, not an unconditional null. It
+    overturns two specific claims — a 10-point memory gain and a
+    poisoning collapse — that the conventional protocol would have
+    reported. Both were artifacts of measurement. The thesis is the
+    proof that the conventional way of measuring this class of system
+    is broken."
+
+Q22. "You frame the contribution as methodological. But methodology
+without strong empirical findings is hard to evaluate. How do we know
+your protocol is actually good if it only produced a null?"
+A.  "It produced two non-null findings — that a 10-point gain was
+    fake, and that a 21-point poisoning crash was fake. Those are
+    empirical findings, in the form of corrections. Without my
+    protocol, both of those false findings would still be standing.
+    The methodology is validated by the false claims it removed."
+
+Q23. "Could it be that memory simply needs a different design? You
+tried one design. Why generalise to 'memory does not help'?"
+A.  "I do not generalise to that. The thesis claim is: under THIS
+    protocol, with THIS model, on THIS benchmark, no significant
+    benefit was detected for the four memory configurations I tested
+    plus their MCTS extensions. The conclusion is local. The reasoning-
+    ceiling hypothesis predicts that a different judge model might
+    show a different result — that is future work."
+
+Q24. "Bader's review mentioned you should think about when memory
+helps. Have you? When does memory help?"
+A.  "My mechanistic analysis suggests memory helps most when the judge
+    is operating below its reasoning ceiling — that is, when the judge
+    needs external signal to make the verdict. For a strong judge like
+    GPT-4o on rubric-graded QA, the judge already has the signal.
+    For a weaker judge, or for a more open-ended task without a clear
+    rubric, memory should add value. That is the predictive
+    consequence of the reasoning-ceiling idea."
+
+Q25. "If you had to redo this thesis from scratch, what would you do
+differently?"
+A.  "Three things. One — larger benchmark from the start, so the
+    statistical analysis is sensitive to smaller effects. Two — run
+    the audit from day one, instead of discovering the need for it
+    halfway through. Three — include at least one weaker judge model
+    in the comparison, so the reasoning-ceiling hypothesis can be
+    tested directly within the thesis rather than left to future
+    work."
+
+Q26. "You spent a year on this. Was it worth it, given the null
+result?"
+A.  "Yes. The system, the protocol, the audit, the harness, the
+    statistical pipeline — all of those exist now, in an open
+    repository, ready to be applied to the next memory-augmented
+    judge that someone builds. And two false findings that would have
+    propagated through the field are removed. That is what a year
+    of careful work should produce."
+
+Q27. "Why should anyone care about an LLM judge with memory?"
+A.  "Because LLMs are being used as automatic graders for other LLMs —
+    in benchmarks, in agent evaluation, in reinforcement learning from
+    AI feedback. If judges are inconsistent or biased, every downstream
+    decision is contaminated. Memory is one of the most natural
+    extensions of LLM judging that has been proposed, and it deserves
+    the rigorous evaluation that this thesis provides."
+
+Q28. "Your title mentions 'evaluating agents'. But you evaluate single
+LLM responses, not agents. Is the title accurate?"
+A.  "The thesis title reflects the broader research direction — the
+    judge is intended to evaluate agent outputs. The benchmark used,
+    EvalsBench, contains responses that an agent or a model would
+    produce on a structured task. For thesis scope, I focus on the
+    judging step, which is independent of whether the candidate is
+    a single LLM call or a multi-step agent."
+
+
+============================================================================
+ANTICIPATED TRICK / TRAP QUESTIONS
+============================================================================
+
+T1. "Can you summarise your thesis in one sentence?"
+A.  "I built a memory-augmented LLM judge with a typed knowledge graph,
+    designed a leakage-free protocol and a cryptographic audit to
+    evaluate it, and used the audit to show that the apparent benefits
+    of memory and the apparent fragility under poisoning were both
+    measurement artifacts."
+
+T2. "What is the single most important slide in your presentation?"
+A.  "The snapshot diff slide. It is the visual proof that the audit
+    caught a real bug — without it, every accuracy number in this
+    thesis would be wrong."
+
+T3. "Did you write all this code yourself?"
+A.  "Yes, with standard libraries — Neo4j, OpenAI SDK, NumPy, SciPy,
+    Pydantic. The architecture and the implementation are my own. The
+    full source is in the open repository."
+
+T4. "Did you use ChatGPT to write the thesis?"
+A.  "I used AI tools to refine wording and check grammar, the same way
+    one might use a proofreader. The ideas, the system design, the
+    code, the experiments, and the analysis are mine."
+
+T5. "Your supervisor's role was?"
+A.  "Professor Bader Rasheed guided the research direction, gave
+    critical feedback on the framing, and especially on whether the
+    null result was real or an artifact — which directly led to the
+    audit. The implementation and the writing are mine."
+
+T6. "Which result are you most proud of?"
+A.  "The catch on the first audit run. The audit found a real write-
+    back leakage bug in my own code before any result was published.
+    That is the moment the thesis stopped being a system demo and
+    became a methodological contribution."
+
+T7. "Which result are you least proud of?"
+A.  "Not testing a weaker judge model. The reasoning-ceiling hypothesis
+    is the most interesting predictive consequence of the thesis, and
+    I leave it for future work because of time and compute. It is the
+    first thing I would do if I continued this research."
+
+T8. "Why this topic and not something else?"
+A.  "Because LLM evaluation is becoming infrastructure for the rest
+    of AI, and infrastructure that we cannot trust is dangerous. The
+    chance to work on the measurement layer — rather than yet another
+    new model — was exactly the kind of foundational contribution I
+    wanted to make."
+
+T9. "What did you learn personally from this work, beyond the result?"
+A.  "I learned that intellectual honesty in research is a discipline.
+    When my first numbers looked great, the easy thing was to write
+    them up. The hard thing — and the right thing — was to ask whether
+    they were real. That is the practice this thesis tried to embody."
+
+T10. "Are you confident in your defense today?"
+A.  "I am. The work is solid, the results are honest, and the protocol
+    will outlast this thesis."
+
+
+============================================================================
+RAPID-FIRE — IF THEY HAMMER YOU
+============================================================================
+
+- Sample size?         "80 paired items, 80 unique questions."
+- Judge model?         "GPT-4o, pinned to a specific version."
+- Significance level?  "Alpha 0.05, two-sided."
+- Confidence?          "Wilson 95 percent for proportions, paired
+                       bootstrap 95 percent for differences."
+- Effect size?         "Cohen's h would be roughly 0.1 for the
+                       observed -5pp delta, far below conventional
+                       small-effect threshold."
+- MDE?                 "12 to 15 percentage points at 80 percent power."
+- Seeds tested?        "Three: 42, 7, 123."
+- Code open?           "Yes — github.com/khushpatel2002/MCTS-MAJ."
+- Audit overhead?      "Negligible — one SHA-256 hash per run, microsecond
+                       method patching during eval."
+- Total runtime?       "Two hours for full reproduction, single machine."
+
+
+============================================================================
+THE THREE THINGS YOU MUST NEVER SAY
+============================================================================
+
+1. NEVER say "memory does not help." Say: "no significant benefit was
+   detected at this scale, on this benchmark, with this judge."
+
+2. NEVER say "my system failed." Say: "the audited protocol corrected
+   two findings that the un-audited protocol would have reported."
+
+3. NEVER apologize for the null result. The null IS the result. Own it.
+
+
+============================================================================
+ONE LAST THING
+============================================================================
+
+If they ask a question you do not know — DO NOT make up an answer.
+Say: "That is a fair question. I do not have a precise answer in this
+moment — let me think." Then think, briefly, and give your best
+genuine answer. The committee respects calibrated uncertainty far
+more than confident bluffing.
+
+
+GOOD LUCK.
+============================================================================

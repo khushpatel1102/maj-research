@@ -1,0 +1,135 @@
+====================================================================
+CODE SNIPPETS FOR THE IMPLEMENTATION CHAPTER
+Copy each code block into a monospace style (Courier New / Consolas),
+size ~10pt, with light-grey shading. The caption goes below, italic.
+====================================================================
+
+
+--------------------------------------------------------------------
+LISTING 4.1 — Goes in section 4.2 "The Memory-Assisted Judge"
+Caption: Listing 4.1 – The three-stage memory retrieval of the MAJ judge.
+--------------------------------------------------------------------
+
+def judge_with_memory(task, agent_output, graph_manager,
+                      goal=None, model="gpt-4o"):
+    code_embedding = get_embedding(agent_output)
+    # Stage 1-2: contrastive attempts and similar issues
+    contrastive = graph_manager.find_contrastive_attempts(
+        code_embedding, top_k=3)
+    similar_issues = graph_manager.find_similar_issues(
+        code_embedding, top_k=5)
+    # Stage 3: semantic patterns from the similar issues
+    semantic_patterns = graph_manager.find_semantic_patterns(
+        code_embedding, top_k=3)
+    memory_context = _format_memory_context(
+        contrastive, similar_issues, semantic_patterns)
+    # ... judge call conditioned on memory_context ...
+
+
+--------------------------------------------------------------------
+LISTING 4.2 — Goes in section 4.3 "The MCTS Components"
+Caption: Listing 4.2 – The UCT selection score used by the MCTS-Judge.
+--------------------------------------------------------------------
+
+def uct_score(self, exploration_constant=3.0):
+    """Upper Confidence Bound for Trees."""
+    if self.visit_count == 0:
+        return float('inf')
+    parent_visits = self.parent.visit_count if self.parent else 1
+    exploitation = self.q_value
+    exploration = exploration_constant * math.sqrt(
+        math.log(parent_visits) / self.visit_count)
+    return exploitation + exploration
+
+
+--------------------------------------------------------------------
+LISTING 4.3 — Goes in section 4.3 "The MCTS Components"
+Caption: Listing 4.3 – The seven retrieval actions of MCTS-Retrieval,
+         four of which are multi-hop graph traversals.
+--------------------------------------------------------------------
+
+RETRIEVAL_ACTIONS = [
+    {"name": "contrastive_attempts", ...},
+    {"name": "similar_issues", ...},
+    {"name": "semantic_patterns", ...},
+    {"name": "multi_hop_issues_to_fixes", ...},
+    {"name": "multi_hop_semantic_to_issues", ...},
+    {"name": "multi_hop_policy_to_attempts", ...},
+    {"name": "multi_hop_attempt_to_semantic", ...},
+]
+
+
+--------------------------------------------------------------------
+LISTING 4.4 — Goes in section 4.4 "The Frozen-Memory Audit"
+Caption: Listing 4.4 – The memory snapshot and SHA-256 fingerprint.
+--------------------------------------------------------------------
+
+def snapshot(self) -> dict:
+    """Deterministic fingerprint of the current memory state."""
+    import hashlib
+    # ... collect node_counts, edge_counts, node_ids, edge_keys ...
+    h = hashlib.sha256()
+    h.update("|".join(node_ids).encode())
+    h.update(b"\n")
+    h.update("|".join(edge_keys).encode())
+    return {
+        "node_counts":  node_counts,
+        "edge_counts":  edge_counts,
+        "total_nodes":  sum(node_counts.values()),
+        "total_edges":  sum(edge_counts.values()),
+        "fingerprint":  h.hexdigest(),
+    }
+
+
+--------------------------------------------------------------------
+LISTING 4.5 — Goes in section 4.5 "Structured Outputs"
+Caption: Listing 4.5 – Pydantic schemas for structured judge outputs.
+--------------------------------------------------------------------
+
+class SubtaskDecision(BaseModel):
+    analysis: str
+    decision: bool          # True = correct, False = incorrect
+
+class SelfAssessment(BaseModel):
+    useful: bool            # True = subtask improves evaluation
+
+class GlobalVerdict(BaseModel):
+    verdict: bool           # True = response passes
+    reasoning: str
+
+
+--------------------------------------------------------------------
+LISTING 4.6 — Goes in section 4.6 "Handling Transient Failures"
+Caption: Listing 4.6 – Exponential-backoff retry wrapper for model calls.
+--------------------------------------------------------------------
+
+def _call_with_retries(fn, *, max_attempts=5, base=2.0,
+                       max_sleep=30.0):
+    """Retry fn() on transient errors with backoff + jitter."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return fn()
+        except Exception as exc:
+            if not _is_transient(exc) or attempt == max_attempts:
+                raise
+            sleep_s = min(max_sleep, base ** attempt) \
+                      + random.uniform(0, 0.5)
+            time.sleep(sleep_s)
+
+
+====================================================================
+WHERE EACH LISTING GOES — quick map
+====================================================================
+  4.2  The Memory-Assisted Judge      -> Listing 4.1
+  4.3  The MCTS Components            -> Listing 4.2 and Listing 4.3
+  4.4  The Frozen-Memory Audit        -> Listing 4.4
+  4.5  Structured Outputs             -> Listing 4.5
+  4.6  Handling Transient Failures    -> Listing 4.6
+
+FORMATTING IN WORD:
+  - Select the code block, set font to Courier New (or Consolas), ~10pt.
+  - Single line spacing for the code block.
+  - Optional: light-grey paragraph shading (Format > Borders and
+    Shading > Shading > pick a light grey).
+  - The caption line goes directly below the block, italic, ~12pt,
+    left-aligned.

@@ -1,0 +1,5 @@
+Abstract
+
+Large Language Models are increasingly used as automatic judges that score the outputs of other models. This thesis investigates whether equipping an LLM judge with a persistent, structured memory of its past evaluations improves its verdicts. A memory-augmented judging system, MCTS-MAJ, was implemented, together with a leakage-free evaluation protocol and a two-layer frozen-memory audit that proves memory is not modified during evaluation. Under a conventional protocol, memory appeared to deliver large gains; under the leakage-free, audited protocol, with GPT-4o on eighty held-out samples, no configuration significantly outperformed a single-pass stateless judge. The audit also caught a real leakage defect, and a corrected re-run showed that a previously reported collapse under memory poisoning was a measurement artifact. Both the apparent benefit and the apparent fragility of memory are largely artifacts of the evaluation protocol.
+
+Keywords: LLM-as-a-Judge, memory-augmented evaluation, retrieval-augmented generation, Monte Carlo Tree Search, evaluation leakage, frozen-memory audit, statistical significance.

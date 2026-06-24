@@ -1,0 +1,293 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{setspace}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue,
+}
+
+\onehalfspacing
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+\vspace*{3cm}
+
+{\LARGE \textbf{MCTS-MAJ: Memory-Augmented LLM-as-a-Judge\\ with Monte Carlo Tree Search}}
+
+\vspace{1.5cm}
+
+{\Large \textbf{Chapter 3: Design and Methodology}}
+
+\vspace{2cm}
+
+{\large \textbf{Khush Patel}}
+
+\vspace{1.5cm}
+
+Spring Submission of the thesis in partial fulfillment\\
+of the requirements for the degree of\\
+\textit{Bachelor of Science in Computer Science}\\[0.5cm]
+under the supervision of Professor Bader Rasheed
+
+\vfill
+
+Innopolis University\\
+2026
+
+\end{center}
+\end{titlepage}
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+This chapter presents the design of MCTS-MAJ, a framework for memory-augmented LLM-as-a-Judge evaluation, and the methodology used to assess it. The research proceeds in two stages. The first stage specifies the \textit{Memory-Assisted Judge (MAJ)}: a typed knowledge graph of past evaluations (Policies, Attempts, Issues, Fixes, Semantic categories), a three-stage retrieval pipeline with asymmetrically tuned similarity thresholds, and an organic learning regime in which the judge's own verdicts populate memory over time. The second stage introduces \textit{MCTS-MAJ}, which embeds two instances of Monte Carlo Tree Search around the MAJ core: \textit{MCTS-Judge} performs test-time scaling in the reasoning layer through dynamically generated, task-specific evaluation subtasks, and \textit{MCTS-Retrieval} performs agentic search over the memory graph using a set of graph-level tools. To evaluate the framework without the confounds of our previous protocol, the chapter defines a leakage-free evaluation design that partitions the EvalsBench dataset by question and freezes memory during testing, together with four memory provenance conditions (no memory, self-written, oracle, and three poisoning rates) that probe a single scientific question: \textit{when does persistent memory help LLM judges, and when does it corrupt evaluation?} The chapter concludes with a discussion of limitations, ethical considerations, and the concrete problems that had to be overcome during implementation.
+
+\tableofcontents
+
+\chapter{Design and Methodology}
+
+\section{Purpose of the Chapter}
+
+This chapter specifies the design of the MCTS-MAJ framework and the methodology used to evaluate it. Section~\ref{sec:background} situates the work in the literature on LLM-as-a-Judge, memory-augmented retrieval, and Monte Carlo Tree Search. Section~\ref{sec:research-design} states the scientific question, objectives, experimental setup, and metrics. Sections~\ref{sec:data-collection}--\ref{sec:data-preparation} describe the dataset, the gathering process, and the partition scheme used to eliminate evaluation leakage. Section~\ref{sec:maj} specifies the MAJ core system; Section~\ref{sec:mcts-maj} specifies the MCTS-MAJ extension. Section~\ref{sec:analysis} describes analysis methods. Sections~\ref{sec:limitations}--\ref{sec:problems} conclude with limitations, ethics, reproducibility, and implementation problems overcome.
+
+\section{Theoretical Background}
+\label{sec:background}
+
+\subsection{LLM-as-a-Judge Evaluation}
+
+The \textit{LLM-as-a-Judge} paradigm uses a language model to evaluate the quality of machine- or human-generated responses against a rubric \cite{geval2023, mt_bench2023}. Prior work including G-Eval \cite{geval2023} and Prometheus \cite{prometheus2023} has established that strong LLMs can approach human agreement on open-ended evaluation tasks, yet two systematic weaknesses remain. First, \textit{statelessness}: canonical judges treat each evaluation independently, which precludes learning from prior verdicts and produces inconsistent judgments on semantically related items. Second, \textit{single-pass reasoning}: a single forward pass over the prompt conflates distinct evaluative dimensions (for example, coverage, accuracy, depth) into one decision, which has been shown to hurt precision on multi-aspect rubrics. The framework developed in this thesis addresses both weaknesses simultaneously.
+
+\subsection{Memory-Augmented Retrieval}
+
+Retrieval-Augmented Generation \cite{rag_original2020} conditions a language model on an external, queryable store at inference time. More recent variants add adaptivity: Active Retrieval \cite{active_rag2023} modifies the query as reasoning proceeds, and Self-RAG \cite{self_rag2023} uses the model's own critique signal to accept or reject retrieved context. These systems still operate on flat document stores. In contrast, the memory in this thesis is a \textit{typed property graph} with distinct node kinds for tasks, responses, errors, and their abstract categories, and explicit edges (\textsc{satisfies}, \textsc{causes}, \textsc{resolves}, \textsc{abstracts\_to}) that enable multi-hop structural queries. Typed structure permits retrieval strategies such as ``find the \textit{fix} that resolved the \textit{issue} most similar to the one I am now considering'', which are inexpressible in a flat embedding index.
+
+\subsection{Monte Carlo Tree Search}
+
+Monte Carlo Tree Search (MCTS) is a simulation-based anytime search algorithm that incrementally builds a tree of states and estimates the value of each node by averaging the outcomes of rollouts passing through it \cite{uct2006, alpha_go2016}. Each iteration performs four steps: (i) \textit{selection}, where the tree is traversed from the root using an exploration versus exploitation rule; (ii) \textit{expansion}, where a new node is added; (iii) \textit{simulation}, where a rollout is completed to terminal; and (iv) \textit{backpropagation}, where the reward is propagated along the visited path. The Upper Confidence Bound for Trees (UCT) selection rule trades exploitation of high-mean children against exploration of under-visited ones by combining a child's estimated value with a term that grows when the child has been visited less often than its siblings. Chain-of-thought prompting \cite{chain_of_thought2022} showed that decomposition improves LLM reasoning; MCTS generalizes this by searching over \textit{alternative decompositions} rather than committing to a single chain. Recent work has applied MCTS to LLM judges on code correctness \cite{mcts_judge2025}; this thesis extends that direction with task-agnostic subtasks and an additional MCTS layer over retrieval.
+
+\section{Research Design}
+\label{sec:research-design}
+
+\subsection{Two-Stage Research Trajectory}
+
+The research was conducted in two stages that build on one another. \textbf{Stage 1} produced MAJ and empirically characterized it across seven experiments reported in Chapter~4 (cross-model comparison, seeded memory, retrieval ablation, scaling, cross-domain transfer, cold-start learning curve, unit-test evaluation). Stage 1 established both the conditions under which memory benefits LLM judges and a clear capability threshold: only sufficiently strong models exploit memory. \textbf{Stage 2} extended MAJ with MCTS at two layers, motivated by Stage 1 evidence that retrieval quality and reasoning depth each bound final performance. Stage 2 additionally replaced the original evaluation protocol with a leakage-free design (Section~\ref{sec:data-preparation}) after the supervisor flagged a latent leakage risk in the paired-response structure of the benchmark.
+
+\subsection{Scientific Question}
+
+The thesis is framed around a single question:
+
+\begin{quote}
+\textit{When does persistent memory help LLM judges, and when does it instead inflate or corrupt evaluation?}
+\end{quote}
+
+The question is motivated by a tension. Memory provides contextual signal that can calibrate a judge across a deployment lifetime. Memory can also propagate errors, leak information across related samples, and reinforce the judge's own biases. A credible answer requires not only positive evidence that memory helps, but also negative evidence that delimits when it does not, and a quantitative account of failure modes when memory is corrupt.
+
+\subsection{Objectives}
+
+\begin{enumerate}
+    \item Design a memory-augmented judge (MAJ) that stores past evaluations in a structured graph with typed retrieval.
+    \item Extend MAJ with Monte Carlo Tree Search at both the reasoning layer (multi-perspective evaluation) and the retrieval layer (agentic search over the memory graph).
+\end{enumerate}
+
+\subsection{Experimental Setup}
+
+Experiments use the EvalsBench dataset \cite{evalsbench2024} (160 samples, 80 unique questions, paired pass/fail). The underlying judge model is GPT-4o, accessed through the OpenAI API; embeddings are 1536-dimensional vectors from \texttt{text-embedding-ada-002} \cite{openai_embeddings2024}. Memory is persisted in a Neo4j graph database with HNSW-backed vector indexes \cite{neo4j2023}. Code, prompts, and per-sample result CSVs are version-controlled. All runs fix a random seed (default 42), which is logged with every result file to permit exact replication.
+
+\subsection{Evaluation Metrics}
+
+\begin{itemize}
+    \item \textbf{Accuracy}: the proportion of test samples on which the judge's verdict matches the ground-truth label.
+    \item \textbf{Latency}: mean wall-clock time per evaluation, measured end-to-end including retrieval and (where applicable) tree search.
+    \item \textbf{Memory utilization}: counts of retrieved contrastive attempts, similar issues, and semantic patterns per evaluation, used to characterize retrieval behavior rather than to drive the verdict.
+\end{itemize}
+
+\section{Data Collection Methods}
+\label{sec:data-collection}
+
+\subsection{Dataset Selection}
+
+EvalsBench was selected for three reasons. First, it is a published benchmark with an established vanilla baseline of 84.49 percent for gpt-4o-mini, giving a reference point without requiring an external human study. Second, it \textit{deliberately} pairs each question with both a passing and a failing response, which is a stringent stress test for any memory system: a naive pipeline that updates memory during evaluation can leak signal from one paired response to the other. Third, each sample carries machine-readable grading notes with severity markers, enabling precise rubric-aware prompts without post-hoc rubric construction.
+
+\subsection{Data Source}
+
+The data are read from \texttt{data/benchmark\_df.csv}: 160 rows across six columns (\texttt{topic}, \texttt{question}, \texttt{grading\_notes}, \texttt{target} with values \texttt{pass} or \texttt{fail}, \texttt{response}, \texttt{notes}). The label distribution is balanced (80 pass, 80 fail); 80 unique questions appear twice, once with a passing response and once with a failing one.
+
+\section{Data Gathering Process}
+
+The dataset is read once as a pandas DataFrame; no scraping, crowdsourcing, or augmentation is performed. For each sample, \texttt{grading\_notes} becomes the \texttt{task} seen by the judge and \texttt{response} becomes the \texttt{agent\_output} to be evaluated.
+
+\section{Data Preparation Methods}
+\label{sec:data-preparation}
+
+\subsection{Leakage-Free Partition}
+
+An earlier version of the evaluation treated each row as independent and updated memory during testing. Because the dataset pairs each question with two responses of opposite labels, this permits an implicit information channel: evaluating the passing response first writes positive reasoning into memory that can bias the subsequent fail evaluation of the same question, and vice versa. This is a textbook instance of \textit{train/test contamination via related examples}, and it was flagged during intermediate supervisor review.
+
+To eliminate this channel, the dataset is partitioned \textit{by question identifier}, not by row. The set of 80 unique questions is randomly shuffled with a fixed seed and split evenly into a training set of 40 questions and a held-out test set of 40 questions. The sample partition is induced from the question partition: a sample belongs to train if and only if its question belongs to the training question set. Both the pass and fail versions of any given question therefore lie on the same side of the split, and no question ever appears in both train and test.
+
+\subsection{Memory Provenance Conditions}
+
+Four memory conditions are defined to probe the scientific question:
+
+\begin{itemize}
+    \item \textbf{No memory (stateless baseline)}: the memory graph is empty.
+    \item \textbf{Self-written}: MAJ is run on the 80 training samples and its own verdicts are written to the graph. This models an organic deployment in which the judge bootstraps memory from its own (possibly imperfect) past work.
+    \item \textbf{Oracle}: ground-truth labels from the dataset are stored directly as Attempts, bypassing the judge. This upper-bounds what memory provenance can contribute, holding the retrieval pipeline fixed.
+    \item \textbf{Poisoned}: oracle memory is used, but a fraction of labels is deterministically flipped at one of three rates (10 percent, 20 percent, or 50 percent) using a fixed seed. This stress-tests the system under controlled corruption.
+\end{itemize}
+
+\subsection{Frozen Memory During Evaluation}
+
+In all conditions memory is read-only during evaluation: no new nodes or edges are written while test samples are judged. This is the second half of the leakage fix: even if the partition is clean, updating memory during testing lets one test sample leak into the next.
+
+\section{Core System: Memory-Assisted Judge (MAJ)}
+\label{sec:maj}
+
+MAJ is the first stage of the research and the substrate on which MCTS-MAJ builds. MAJ consists of a typed property graph, a three-stage retrieval pipeline, and an organic memory-growth regime.
+
+\subsection{Graph Schema}
+
+Nodes take five types: \textbf{Policy} (the task or rubric), \textbf{Attempt} (a response with a verdict and reasoning), \textbf{Issue} (a concrete problem in an attempt), \textbf{Fix} (a resolution for an issue), and \textbf{Semantic} (an abstract category grouping related issues). Edges encode four relations: \textsc{satisfies} from an Attempt to the Policy it addresses, \textsc{causes} from an Attempt to any Issue it introduces, \textsc{resolves} from a Fix to the Issue it resolves, and \textsc{abstracts\_to} from an Issue to its Semantic category. Every node carries a 1536-dimensional embedding of its text content, indexed for approximate nearest-neighbor search.
+
+\subsection{Three-Stage Retrieval Pipeline}
+
+For each evaluation, MAJ constructs a context in three stages:
+\begin{enumerate}
+    \item \textbf{Contrastive attempts}. A query embedding retrieves the most similar \textit{passing} and \textit{failing} past attempts. The judge thereby sees both what this kind of response has looked like when correct and when flawed.
+    \item \textbf{Similar issues}. The same query retrieves the most similar Issue nodes, surfacing concrete prior problems likely to repeat.
+    \item \textbf{Semantic patterns}. The Semantic categories attached to the retrieved Issues are aggregated, yielding a small set of high-level failure modes to watch for.
+\end{enumerate}
+
+Similarity thresholds are tuned \textit{asymmetrically}: positive examples are accepted at a more permissive cosine similarity threshold than negative examples. The asymmetry reflects an error-cost asymmetry: a spurious positive example mildly biases the judge toward pass, but a spurious negative example can cause the judge to flag an otherwise valid response. Empirically this asymmetry reduced false-positive issue flagging without measurable loss in true-positive recall.
+
+\subsection{Organic Memory Growth}
+
+In deployment, memory is not pre-seeded: MAJ writes its own verdicts, extracted issues, and proposed fixes after each evaluation, and a lightweight classifier assigns each issue to a Semantic category (creating a new one if none exists). Chapter 4 reports how accuracy evolves as memory grows from zero to several hundred examples and quantifies the point of diminishing returns.
+
+\section{Extension: MCTS-MAJ}
+\label{sec:mcts-maj}
+
+Stage 2 extends MAJ with two Monte Carlo Tree Search components: one around \textit{reasoning} (MCTS-Judge), one around \textit{retrieval} (MCTS-Retrieval). Both are designed to be composable: the combined system (``Full MCTS'') chains MCTS-Retrieval into MCTS-Judge.
+
+\subsection{MCTS-Judge (Reasoning Layer)}
+
+MCTS-Judge performs \textit{test-time scaling} for the judge by searching over alternative decompositions of the evaluation task into subtasks. For each sample:
+\begin{enumerate}
+    \item \textbf{Dynamic subtask generation}. A planning call asks the judge to read the task and response and to emit 5--7 task-specific evaluation perspectives (for example, ``Coverage of DCF method''). An earlier prototype with nine \textit{hardcoded} code-oriented subtasks was abandoned after it was found to underperform stateless judging on non-code rubrics; the planning step restores domain relevance.
+    \item \textbf{Selection}. At each internal node, the next subtask is chosen by combining UCT (global, exploration-aware) with an LLM self-assessment (local, task-aware) that scores whether exploring a given child would improve evaluation completeness.
+    \item \textbf{Expansion}. An unvisited subtask becomes a new child of the current node.
+    \item \textbf{Simulation}. The judge evaluates the response from the expanded subtask's perspective, producing a pass/fail decision for that perspective.
+    \item \textbf{Reward}. A trajectory's majority vote is compared against an independent lightweight judgment; agreement yields a positive reward, disagreement yields zero. This independent check dampens self-agreement loops.
+    \item \textbf{Backpropagation}. Reward flows up the trajectory, updating visit counts and value estimates.
+\end{enumerate}
+After \texttt{num\_rollouts} iterations, the best trajectory (by cumulative reward) is selected, and a final global evaluation aggregates its per-subtask analyses into a single verdict.
+
+\subsection{MCTS-Retrieval (Retrieval Layer)}
+
+MCTS-Retrieval replaces the fixed three-stage pipeline with \textit{agentic search} over the memory graph. The action space is a small set of graph-level tools the agent can invoke:
+\begin{enumerate}
+    \item \texttt{search\_by\_attempts} --- contrastive vector search over Attempts.
+    \item \texttt{search\_by\_issues} --- vector similarity over Issues.
+    \item \texttt{search\_by\_semantics} --- aggregation over Semantic nodes.
+    \item \texttt{traverse\_issue\_to\_fix} --- one-hop traversal from Issues to their resolving Fixes.
+    \item \texttt{traverse\_semantic\_to\_issues} --- one-hop traversal from Semantic categories to their member Issues.
+    \item \texttt{traverse\_policy\_to\_attempts} --- one-hop traversal from Policies to their Attempts.
+    \item \texttt{traverse\_attempts\_to\_semantics} --- two-hop traversal from Attempts through Issues to Semantic categories.
+\end{enumerate}
+Rollouts compose these tools into trajectories. Each trajectory is scored by a weighted sum of \textit{relevance} (mean similarity of retrieved items), \textit{diversity} (distinct tools used), and \textit{volume} (items retrieved), with weights set on a small development set and held fixed thereafter. UCT-guided selection concentrates subsequent exploration on high-reward tool combinations, so the effective retrieval strategy adapts to the query without any hand-coded pipeline. The tool set is extensible: new graph operations (temporal windowing, cluster-based retrieval, etc.) simply enlarge the action space without any other change to the algorithm.
+
+\subsection{Six Evaluation Modes}
+
+The components compose into six evaluation modes that serve as an ablation ladder:
+\begin{enumerate}
+    \item \textbf{Stateless} --- single-pass judge, no memory, no MCTS.
+    \item \textbf{MAJ} --- single-pass judge with three-stage memory retrieval.
+    \item \textbf{MCTS-Judge} --- MCTS reasoning, no memory.
+    \item \textbf{MCTS-Judge + Memory} --- MCTS reasoning over MAJ memory context.
+    \item \textbf{MCTS-Retrieval + Judge} --- MCTS retrieval with single-pass judge.
+    \item \textbf{Full MCTS} --- MCTS-Retrieval feeds context into MCTS-Judge.
+\end{enumerate}
+Each component can be turned on or off independently, and each combination isolates a specific contribution (retrieval alone, reasoning alone, their composition).
+
+\section{Data Analysis Methods}
+\label{sec:analysis}
+
+\subsection{Exploratory Data Analysis}
+
+Exploratory analysis confirmed three structural facts exploited by the methodology: 80 unique questions each appear twice with opposite labels; the label distribution is balanced; topics span 80 categories with no topic appearing more than twice. The pair structure motivated the question-level partition in Section~\ref{sec:data-preparation}.
+
+\subsection{Result Aggregation}
+
+Each mode-condition combination writes a per-sample CSV with fields \texttt{idx}, \texttt{topic}, \texttt{expected}, \texttt{predicted}, \texttt{correct}, \texttt{latency\_s}, and mode-specific extras (for example, trajectory length for MCTS modes). Accuracy is the mean of \texttt{correct}; latency is the mean of \texttt{latency\_s}. Intermediate traces (MCTS tree snapshots, retrieval trajectories) are stored alongside raw results to support post-hoc analysis and error auditing.
+
+\section{Limitations of the Methods}
+\label{sec:limitations}
+
+\subsection{Sample Size}
+
+All Stage 2 (leakage-free) experiments use 80 test samples. A single flip changes accuracy by 1.25 percentage points, so small differences should be interpreted cautiously. Stage 1 used up to 1000 samples but under the earlier (pre-leakage-fix) protocol. Multi-seed runs with confidence intervals are explicitly scoped as future work.
+
+\subsection{Computational Demands}
+
+MCTS modes cost roughly 10 to 13 times more wall-clock time per sample than single-pass modes (40 to 50 seconds versus 4 seconds). This is a real operational constraint for high-throughput deployment; the framework is best positioned where evaluation quality matters more than per-sample cost.
+
+\subsection{Domain Specificity}
+
+EvalsBench is QA grading. Task families with richer multi-aspect rubrics (for example, agent trajectory evaluation in tau-Bench-style benchmarks \cite{tau_knowledge2026}) are expected to benefit more from MCTS decomposition. Code evaluation, where the original MCTS-Judge was developed \cite{mcts_judge2025}, is the natural cross-check; results there are scoped for future work.
+
+\subsection{Single-Model Evaluation}
+
+Stage 2 uses GPT-4o throughout. Stage 1 showed that weaker models (gpt-4o-mini) fail to leverage memory --- the capability-threshold finding. Results should not be extrapolated across the threshold.
+
+\section{Ethical Considerations}
+
+\subsection{Data Privacy}
+
+EvalsBench is a public benchmark with no personally identifiable information. No private user data is collected or processed.
+
+\subsection{Transparency and Reproducibility}
+
+Code, prompts, configuration, and per-sample result CSVs are version-controlled. Random seeds are fixed at 42 and logged per run; the leakage-free partition script is deterministic given the seed. Each reported number is reproducible from the stored artifacts.
+
+\section{Problems that Had to Be Overcome}
+\label{sec:problems}
+
+\subsection{Evaluation Leakage}
+
+The original protocol updated memory during evaluation and treated the 160 rows as i.i.d. Given the paired-response structure of EvalsBench, this admitted a latent information channel from one paired response to the other. The fix was to partition by question and freeze memory during testing (Section~\ref{sec:data-preparation}).
+
+\subsection{Hardcoded MCTS Subtasks}
+
+The first MCTS-Judge implementation used nine subtasks imported from a code-evaluation reference \cite{mcts_judge2025}. These were poorly matched to QA rubrics and contributed to MCTS-Judge \textit{underperforming} stateless in early runs. Dynamic subtask generation restored domain relevance and recovered a positive contribution from MCTS.
+
+\subsection{Unhashable Dataclass Nodes}
+
+\texttt{MCTSNode} was used as a dictionary key during UCT selection but Python's \texttt{@dataclass} defaults to value-based equality, which broke hashing after state mutation. The fix was \texttt{@dataclass(eq=False)}, which preserves identity-based hashing.
+
+\subsection{Free-Text Parsing}
+
+Early MCTS simulations parsed ``Decision: Yes/No'' from free-text LLM output. Approximately 15--20 percent of responses deviated from the expected format and silently misparsed. All relevant LLM calls were migrated to structured outputs via OpenAI's \texttt{responses.parse} with explicit Pydantic schemas, eliminating silent parse failures.
+
+\section{Recap of Key Points}
+
+This chapter specified MCTS-MAJ as a two-stage design. Stage 1 (MAJ) equips an LLM judge with a typed memory graph and a three-stage retrieval pipeline. Stage 2 (MCTS-MAJ) embeds two MCTS instances around the MAJ core: one searches over reasoning decompositions, the other over graph retrieval trajectories. The evaluation methodology is leakage-free by construction (question-level partition, frozen memory during testing) and instrumented across four memory provenance conditions, which together operationalize the thesis's scientific question. Chapter~4 reports the experiments and results for both stages.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
