@@ -1,0 +1,29 @@
+{
+  "stateless": {
+    "n": 80,
+    "acc": 66.25,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 35.0,
+    "balanced_acc": 66.25
+  },
+  "asymmetric": {
+    "n": 80,
+    "acc": 65.0,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 32.5,
+    "balanced_acc": 65.0
+  },
+  "symmetric": {
+    "n": 80,
+    "acc": 66.25,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 35.0,
+    "balanced_acc": 66.25
+  }
+}

@@ -1,0 +1,161 @@
+idx,topic,question,expected,predicted,correct,latency_s,n_pos_post,n_neg_post,fold
+6,Series A vs Series B funding terms,What are the key differences in funding terms between Series A and Series B rounds?,True,True,True,2.49,3,1,0
+7,Series A vs Series B funding terms,What are the key differences in funding terms between Series A and Series B rounds?,False,True,False,2.27,3,1,0
+12,Indicators of overvaluation in tech startups,What are the critical indicators you look for to assess whether a tech startup is overvalued in its current funding round?,True,True,True,1.88,3,1,0
+13,Indicators of overvaluation in tech startups,What are the critical indicators you look for to assess whether a tech startup is overvalued in its current funding round?,False,False,True,5.02,3,2,0
+20,Competitive dynamics in tech sectors,How should a VC evaluate market positioning based on competitive dynamics in a tech startup's pitch?,True,True,True,2.78,3,3,0
+21,Competitive dynamics in tech sectors,How should a VC evaluate market positioning based on competitive dynamics in a tech startup's pitch?,False,False,True,2.61,3,3,0
+22,Navigating regulatory challenges for fintech startups,How should a fintech startup prepare for regulatory compliance to secure both investor confidence and market entry?,True,True,True,2.63,3,1,0
+23,Navigating regulatory challenges for fintech startups,How should a fintech startup prepare for regulatory compliance to secure both investor confidence and market entry?,False,True,False,2.09,3,1,0
+32,Venture capital portfolio diversification strategies,How should early-stage VCs approach portfolio diversification to maximize returns while managing risks?,True,True,True,1.92,3,0,0
+33,Venture capital portfolio diversification strategies,How should early-stage VCs approach portfolio diversification to maximize returns while managing risks?,False,False,True,2.8,3,0,0
+40,Pattern recognition in tech market cycles,What indicators signal the peak of a tech market cycle and how should VCs adjust strategies accordingly?,True,True,True,2.1,3,3,0
+41,Pattern recognition in tech market cycles,What indicators signal the peak of a tech market cycle and how should VCs adjust strategies accordingly?,False,True,False,2.09,3,3,0
+46,Identifying financial bubbles in tech,"What indicators suggest a financial bubble is forming in the tech sector, and how should a VC approach investing during such periods?",True,True,True,2.62,3,2,0
+47,Identifying financial bubbles in tech,"What indicators suggest a financial bubble is forming in the tech sector, and how should a VC approach investing during such periods?",False,True,False,2.62,3,1,0
+60,Investment risk assessment in tech startups,Describe key factors to assess investment risk in a tech startup during due diligence.,True,True,True,2.78,3,1,0
+61,Investment risk assessment in tech startups,Describe key factors to assess investment risk in a tech startup during due diligence.,False,False,True,3.28,3,1,0
+62,Burn rate analysis for early-stage startups,How do you calculate the burn rate for an early-stage startup to ensure at least 18 months of runway?,True,True,True,1.95,3,0,0
+63,Burn rate analysis for early-stage startups,How do you calculate the burn rate for an early-stage startup to ensure at least 18 months of runway?,False,True,False,2.77,3,0,0
+76,Impact of network effects on startup growth,How do strong network effects impact a startup's valuation and market position during early growth stages?,True,True,True,2.17,3,2,0
+77,Impact of network effects on startup growth,How do strong network effects impact a startup's valuation and market position during early growth stages?,False,True,False,2.72,3,1,0
+78,Economies of scale in tech business models,How does achieving economies of scale impact unit economics and valuation metrics in tech startups?,True,True,True,2.19,3,3,0
+79,Economies of scale in tech business models,How does achieving economies of scale impact unit economics and valuation metrics in tech startups?,False,True,False,2.01,3,2,0
+84,Assessing market traction using KPIs,What key KPIs indicate strong market traction for a startup seeking Series B funding?,True,True,True,2.3,3,3,0
+85,Assessing market traction using KPIs,What key KPIs indicate strong market traction for a startup seeking Series B funding?,False,True,False,2.14,3,3,0
+112,Tech sector sensitivity to regulatory changes,"How do regulatory changes impact valuations in the tech sector, particularly for startups during early funding rounds?",True,True,True,2.12,3,1,0
+113,Tech sector sensitivity to regulatory changes,"How do regulatory changes impact valuations in the tech sector, particularly for startups during early funding rounds?",False,True,False,1.9,3,1,0
+130,Understanding customer segmentation in tech startups,How should a tech startup approach customer segmentation to optimize growth and user acquisition?,True,True,True,3.23,3,3,0
+131,Understanding customer segmentation in tech startups,How should a tech startup approach customer segmentation to optimize growth and user acquisition?,False,True,False,1.83,3,3,0
+132,Seed round valuation impacts on series progression,How does seed round valuation influence future series raises and investor perceptions?,True,True,True,3.07,3,2,0
+133,Seed round valuation impacts on series progression,How does seed round valuation influence future series raises and investor perceptions?,False,False,True,3.37,3,2,0
+152,Impact of cybersecurity incidents on valuations,"How do cybersecurity incidents typically impact a startup's valuation during funding rounds, and what metrics should investors scrutinize closely post-incident?",True,True,True,4.4,3,0,0
+153,Impact of cybersecurity incidents on valuations,"How do cybersecurity incidents typically impact a startup's valuation during funding rounds, and what metrics should investors scrutinize closely post-incident?",False,True,False,2.46,3,1,0
+2,Post-money valuation metrics,What are the key factors to consider when calculating post-money valuation in a startup financing round?,True,True,True,2.11,3,2,1
+3,Post-money valuation metrics,What are the key factors to consider when calculating post-money valuation in a startup financing round?,False,False,True,2.62,3,2,1
+4,Convertible notes vs SAFE in seed funding,"When considering seed funding, what are the critical differences between using convertible notes and SAFEs?",True,True,True,2.18,3,0,1
+5,Convertible notes vs SAFE in seed funding,"When considering seed funding, what are the critical differences between using convertible notes and SAFEs?",False,True,False,1.74,3,0,1
+10,Identifying tech bubble warning signs,What are key warning signs that a tech startup might be part of a tech bubble?,True,True,True,2.46,3,2,1
+11,Identifying tech bubble warning signs,What are key warning signs that a tech startup might be part of a tech bubble?,False,True,False,2.09,3,3,1
+14,Strategies for startup business model pivots,What are critical considerations when evaluating a startup's decision to pivot its business model?,True,True,True,2.62,3,3,1
+15,Strategies for startup business model pivots,What are critical considerations when evaluating a startup's decision to pivot its business model?,False,True,False,3.06,3,3,1
+24,Data privacy compliance for health tech,What are the key regulatory requirements a health tech startup must adhere to for data privacy compliance in the US and EU?,True,True,True,2.88,3,0,1
+25,Data privacy compliance for health tech,What are the key regulatory requirements a health tech startup must adhere to for data privacy compliance in the US and EU?,False,True,False,2.13,3,0,1
+34,Exit strategies for SaaS companies,What are the key factors to consider when planning an exit strategy for a SaaS company?,True,True,True,1.8,3,3,1
+35,Exit strategies for SaaS companies,What are the key factors to consider when planning an exit strategy for a SaaS company?,False,True,False,2.1,3,3,1
+56,Blockchain and crypto startup valuation methods,What are the essential factors to evaluate when valuing a blockchain or crypto startup in a seed round?,True,True,True,2.09,3,3,1
+57,Blockchain and crypto startup valuation methods,What are the essential factors to evaluate when valuing a blockchain or crypto startup in a seed round?,False,False,True,2.28,3,3,1
+68,Valuing intangible assets in tech startups,How do you accurately value intangible assets in a tech startup during the investment decision process?,True,True,True,3.05,3,2,1
+69,Valuing intangible assets in tech startups,How do you accurately value intangible assets in a tech startup during the investment decision process?,False,True,False,3.02,3,2,1
+72,Analyzing churn rate in subscription-based models,What key metrics and strategies should a startup prioritize to effectively manage and reduce churn rate in a subscription-based business model?,True,True,True,2.42,3,3,1
+73,Analyzing churn rate in subscription-based models,What key metrics and strategies should a startup prioritize to effectively manage and reduce churn rate in a subscription-based business model?,False,True,False,2.18,3,3,1
+74,Pricing strategies for tech startups,How should an early-stage SaaS startup approach its initial pricing strategy to attract early adopters while ensuring sustainable unit economics?,True,True,True,2.25,3,3,1
+75,Pricing strategies for tech startups,How should an early-stage SaaS startup approach its initial pricing strategy to attract early adopters while ensuring sustainable unit economics?,False,True,False,2.15,3,3,1
+88,Lifetime value calculation methods for startups,What are the main methods for calculating the lifetime value (LTV) in startups and how do they differ?,True,True,True,3.84,3,3,1
+89,Lifetime value calculation methods for startups,What are the main methods for calculating the lifetime value (LTV) in startups and how do they differ?,False,False,True,5.0,3,3,1
+90,Understanding exit multiples in tech IPOs,How do exit multiples impact valuation and investor returns in tech IPOs?,True,True,True,2.62,3,1,1
+91,Understanding exit multiples in tech IPOs,How do exit multiples impact valuation and investor returns in tech IPOs?,False,True,False,2.62,3,1,1
+96,Analyzing exit trends in the tech industry,What are the key factors when evaluating tech startup exit trends over the past five years?,True,True,True,2.67,3,3,1
+97,Analyzing exit trends in the tech industry,What are the key factors when evaluating tech startup exit trends over the past five years?,False,False,True,2.56,3,3,1
+106,Impact of public market trends on startup exits,"How do recent public market trends influence startup exits, particularly in determining timing and valuations?",True,True,True,2.27,3,2,1
+107,Impact of public market trends on startup exits,"How do recent public market trends influence startup exits, particularly in determining timing and valuations?",False,True,False,2.46,3,2,1
+108,Capital efficiency metrics for startups,What capital efficiency metrics should a startup focus on to attract Series A investors?,True,True,True,2.15,3,3,1
+109,Capital efficiency metrics for startups,What capital efficiency metrics should a startup focus on to attract Series A investors?,False,True,False,2.35,3,3,1
+146,Market saturation risks in mature tech markets,"What are key indicators of market saturation in a mature tech market, and how should startups strategize around these indicators?",True,True,True,2.09,3,2,1
+147,Market saturation risks in mature tech markets,"What are key indicators of market saturation in a mature tech market, and how should startups strategize around these indicators?",False,True,False,2.83,3,2,1
+28,Revenue forecasting methods for startups,How should startups approach revenue forecasting in their early stages to attract VC interest?,True,True,True,7.06,3,3,2
+29,Revenue forecasting methods for startups,How should startups approach revenue forecasting in their early stages to attract VC interest?,False,True,False,2.79,3,3,2
+42,Impact of interest rates on VC funding,How do recent interest rate hikes affect risk appetite in venture capital funding rounds?,True,True,True,7.78,3,3,2
+43,Impact of interest rates on VC funding,How do recent interest rate hikes affect risk appetite in venture capital funding rounds?,False,True,False,2.05,3,3,2
+44,Impact of macroeconomic trends on startup valuations,How do macroeconomic trends impact startup valuations in early-stage funding rounds?,True,True,True,2.58,3,3,2
+45,Impact of macroeconomic trends on startup valuations,How do macroeconomic trends impact startup valuations in early-stage funding rounds?,False,False,True,2.2,3,3,2
+50,Differences between venture debt and equity funding,What are the key differences in terms of financial implications and control considerations between venture debt and equity funding for startups?,True,True,True,2.0,3,1,2
+51,Differences between venture debt and equity funding,What are the key differences in terms of financial implications and control considerations between venture debt and equity funding for startups?,False,True,False,7.32,3,0,2
+86,Customer acquisition cost optimization,What strategies would you implement to optimize CAC in an early-stage SaaS startup?,True,True,True,3.29,3,3,2
+87,Customer acquisition cost optimization,What strategies would you implement to optimize CAC in an early-stage SaaS startup?,False,False,True,3.07,3,2,2
+94,Role of incubators and accelerators in tech ecosystems,"How do incubators and accelerators uniquely contribute to tech startup growth, and what metrics indicate their success?",True,True,True,2.15,3,0,2
+95,Role of incubators and accelerators in tech ecosystems,"How do incubators and accelerators uniquely contribute to tech startup growth, and what metrics indicate their success?",False,True,False,1.97,3,0,2
+100,Assessing disruption potential in mature industries,How do you evaluate the disruption potential of a new tech startup entering a mature industry like automotive or banking?,True,True,True,2.1,3,3,2
+101,Assessing disruption potential in mature industries,How do you evaluate the disruption potential of a new tech startup entering a mature industry like automotive or banking?,False,False,True,2.1,3,3,2
+102,Navigating antitrust issues in tech mergers,What factors must be assessed to ensure a tech merger complies with antitrust regulations?,True,True,True,2.1,3,0,2
+103,Navigating antitrust issues in tech mergers,What factors must be assessed to ensure a tech merger complies with antitrust regulations?,False,True,False,1.79,3,0,2
+114,Syndication dynamics in venture capital,How do syndication dynamics influence valuation and deal terms in Series A rounds?,True,True,True,1.92,3,1,2
+115,Syndication dynamics in venture capital,How do syndication dynamics influence valuation and deal terms in Series A rounds?,False,False,True,2.64,3,1,2
+116,Real options analysis in startup investments,How would you apply real options analysis to evaluate a startup investment opportunity?,True,True,True,2.4,3,0,2
+117,Real options analysis in startup investments,How would you apply real options analysis to evaluate a startup investment opportunity?,False,True,False,2.24,3,0,2
+118,Measuring unit economics in SaaS businesses,What are the critical SaaS unit economics metrics to evaluate before investment?,True,True,True,2.36,3,3,2
+119,Measuring unit economics in SaaS businesses,What are the critical SaaS unit economics metrics to evaluate before investment?,False,False,True,2.51,3,3,2
+120,Assessing scale potential in platform businesses,How do you assess the scale potential of a platform business in its early stages?,True,True,True,1.79,3,3,2
+121,Assessing scale potential in platform businesses,How do you assess the scale potential of a platform business in its early stages?,False,False,True,2.8,3,3,2
+124,Effect of globalization on tech startup growth,How does globalization impact a tech startup's growth strategy and what metrics should they focus on to leverage globalization effectively?,True,True,True,2.21,3,1,2
+125,Effect of globalization on tech startup growth,How does globalization impact a tech startup's growth strategy and what metrics should they focus on to leverage globalization effectively?,False,True,False,3.28,3,1,2
+126,Impact of currency fluctuations on global startup evaluations,"How do currency fluctuations impact the valuation of startups with global operations, and what measures can they take to mitigate related risks?",True,True,True,2.46,3,0,2
+127,Impact of currency fluctuations on global startup evaluations,"How do currency fluctuations impact the valuation of startups with global operations, and what measures can they take to mitigate related risks?",False,True,False,2.55,3,0,2
+128,Strategic partnership evaluations in tech,What factors should a tech startup consider when evaluating potential strategic partnerships?,True,True,True,1.75,3,2,2
+129,Strategic partnership evaluations in tech,What factors should a tech startup consider when evaluating potential strategic partnerships?,False,False,True,2.43,3,2,2
+150,Valuation challenges for biotech startups,What are the key factors investors consider when valuing early-stage biotech startups?,True,True,True,2.12,3,3,2
+151,Valuation challenges for biotech startups,What are the key factors investors consider when valuing early-stage biotech startups?,False,False,True,3.33,3,3,2
+8,Understanding liquidation preferences in VC deals,What are liquidation preferences and how do they impact founder and investor returns in a VC deal?,True,True,True,3.07,3,0,3
+9,Understanding liquidation preferences in VC deals,What are liquidation preferences and how do they impact founder and investor returns in a VC deal?,False,True,False,2.63,3,0,3
+16,Evaluating product-market fit in early-stage companies,What specific indicators would you look for to assess product-market fit in an early-stage startup?,True,True,True,2.56,3,3,3
+17,Evaluating product-market fit in early-stage companies,What specific indicators would you look for to assess product-market fit in an early-stage startup?,False,False,True,2.74,3,3,3
+36,IPO readiness assessment parameters,What are the key financial and operational metrics a startup must evaluate for IPO readiness?,True,True,True,2.11,3,3,3
+37,IPO readiness assessment parameters,What are the key financial and operational metrics a startup must evaluate for IPO readiness?,False,False,True,3.08,3,3,3
+38,M&A strategies in the tech sector,"What are the key considerations when evaluating a tech company for acquisition, especially in terms of strategic fit and financial metrics?",True,True,True,1.96,3,3,3
+39,M&A strategies in the tech sector,"What are the key considerations when evaluating a tech company for acquisition, especially in terms of strategic fit and financial metrics?",False,True,False,2.35,3,3,3
+52,Evaluating founder potential and team dynamics,What key factors would you evaluate to assess founder potential and team dynamics in a seed-stage startup?,True,True,True,2.0,3,3,3
+53,Evaluating founder potential and team dynamics,What key factors would you evaluate to assess founder potential and team dynamics in a seed-stage startup?,False,True,False,2.03,3,3,3
+54,Impact of ESG criteria on startup evaluations,How does integrating ESG criteria influence a startup's evaluation in early funding rounds?,True,True,True,1.7,3,0,3
+55,Impact of ESG criteria on startup evaluations,How does integrating ESG criteria influence a startup's evaluation in early funding rounds?,False,True,False,2.16,3,0,3
+66,Strategies for negotiating term sheets,What are key negotiation points to focus on in a Series A term sheet for a tech startup?,True,True,True,2.42,3,3,3
+67,Strategies for negotiating term sheets,What are key negotiation points to focus on in a Series A term sheet for a tech startup?,False,True,False,2.54,3,3,3
+80,Regulatory impacts on AI and machine learning companies,What's the impact of regulatory changes on AI/ML startups' go-to-market strategies?,True,True,True,3.4,3,1,3
+81,Regulatory impacts on AI and machine learning companies,What's the impact of regulatory changes on AI/ML startups' go-to-market strategies?,False,True,False,2.12,3,1,3
+82,Importance of intellectual property in tech valuations,"How does intellectual property influence tech startup valuations, and what key factors should VCs consider?",True,True,True,2.05,3,2,3
+83,Importance of intellectual property in tech valuations,"How does intellectual property influence tech startup valuations, and what key factors should VCs consider?",False,True,False,3.66,3,2,3
+104,Financial projections for hardware startups,"What are the key financial projections metrics investors look for in hardware startups, and why are they crucial for investment decisions?",True,True,True,2.62,3,3,3
+105,Financial projections for hardware startups,"What are the key financial projections metrics investors look for in hardware startups, and why are they crucial for investment decisions?",False,False,True,3.17,3,3,3
+110,Valuation discrepancies in private vs public markets,"How do valuation methods differ between private and public markets, and what are the implications for investor decision-making?",True,True,True,2.38,3,0,3
+111,Valuation discrepancies in private vs public markets,"How do valuation methods differ between private and public markets, and what are the implications for investor decision-making?",False,True,False,2.62,3,0,3
+134,IPO valuation debacles in recent history,What were the main factors contributing to WeWork's IPO valuation collapse in 2019?,True,True,True,2.37,3,0,3
+135,IPO valuation debacles in recent history,What were the main factors contributing to WeWork's IPO valuation collapse in 2019?,False,False,True,3.76,3,0,3
+136,Importance of network security compliance,How should a startup approaching Series B evaluate its network security compliance to meet investor expectations?,True,True,True,2.86,3,1,3
+137,Importance of network security compliance,How should a startup approaching Series B evaluate its network security compliance to meet investor expectations?,False,False,True,2.33,3,0,3
+144,Effect of remote work trends on startup operations,How do remote work trends influence the valuation metrics for early-stage tech startups?,True,True,True,2.39,3,1,3
+145,Effect of remote work trends on startup operations,How do remote work trends influence the valuation metrics for early-stage tech startups?,False,True,False,1.81,3,2,3
+148,Key success metrics for D2C tech startups,What are the critical metrics to evaluate when assessing the viability and growth potential of a Direct-to-Consumer (D2C) tech startup?,True,False,False,2.42,3,3,3
+149,Key success metrics for D2C tech startups,What are the critical metrics to evaluate when assessing the viability and growth potential of a Direct-to-Consumer (D2C) tech startup?,False,False,True,3.22,3,3,3
+154,Importance of founder-market fit,"How does founder-market fit influence early-stage startup success, and what indicators show strong alignment in this area?",True,True,True,2.03,3,3,3
+155,Importance of founder-market fit,"How does founder-market fit influence early-stage startup success, and what indicators show strong alignment in this area?",False,True,False,1.92,3,3,3
+0,Pre-money valuation techniques,"What are the key methods for determining the pre-money valuation of a tech startup before a Series A investment round, and how do they differ?",True,True,True,3.27,3,3,4
+1,Pre-money valuation techniques,"What are the key methods for determining the pre-money valuation of a tech startup before a Series A investment round, and how do they differ?",False,True,False,2.36,3,3,4
+18,Market timing for tech startups entering competitive spaces,What are the key indicators a startup should assess to determine the right market entry timing in a competitive tech space?,True,True,True,1.74,3,3,4
+19,Market timing for tech startups entering competitive spaces,What are the key indicators a startup should assess to determine the right market entry timing in a competitive tech space?,False,False,True,3.61,3,3,4
+26,Financial modeling for consumer tech startups,"How do you evaluate the financial health of a consumer tech startup, specifically looking at their financial modeling assumptions?",True,True,True,3.25,3,3,4
+27,Financial modeling for consumer tech startups,"How do you evaluate the financial health of a consumer tech startup, specifically looking at their financial modeling assumptions?",False,False,True,2.87,3,3,4
+30,Due diligence checklists for early-stage investments,"What are the top 3 components of a due diligence checklist for early-stage startups, and how do they impact investment decisions?",True,True,True,2.61,3,3,4
+31,Due diligence checklists for early-stage investments,"What are the top 3 components of a due diligence checklist for early-stage startups, and how do they impact investment decisions?",False,False,True,2.99,3,3,4
+48,Role of angel investors in seed stage,"What is the role of angel investors in the seed stage, and how can their involvement impact startup success and future funding rounds?",True,True,True,3.42,3,2,4
+49,Role of angel investors in seed stage,"What is the role of angel investors in the seed stage, and how can their involvement impact startup success and future funding rounds?",False,True,False,2.61,3,2,4
+58,Valuation strategies for AI companies,How to assess valuation for an early-stage AI startup with nascent revenue?,True,True,True,2.58,3,3,4
+59,Valuation strategies for AI companies,How to assess valuation for an early-stage AI startup with nascent revenue?,False,True,False,2.13,3,3,4
+64,Understanding equity dilution in funding rounds,How does equity dilution affect founders post-series A in terms of control and future fundraising?,True,True,True,2.36,3,2,4
+65,Understanding equity dilution in funding rounds,How does equity dilution affect founders post-series A in terms of control and future fundraising?,False,True,False,1.95,3,1,4
+70,Assessing competitive advantage in deep tech,What key factors should you evaluate when determining a startup's competitive advantage in deep tech?,True,True,True,2.41,3,3,4
+71,Assessing competitive advantage in deep tech,What key factors should you evaluate when determining a startup's competitive advantage in deep tech?,False,False,True,2.65,3,3,4
+92,Effective board management in startups,What are the key elements of effective board management in startups?,True,True,True,2.07,3,0,4
+93,Effective board management in startups,What are the key elements of effective board management in startups?,False,False,True,2.96,3,0,4
+98,Forecasting market entry for tech innovations,How do you evaluate timing for a startup's market entry with an emerging tech innovation?,True,True,True,2.39,3,3,4
+99,Forecasting market entry for tech innovations,How do you evaluate timing for a startup's market entry with an emerging tech innovation?,False,False,True,2.66,3,3,4
+122,Evaluating pivot strategies in startups,What metrics are essential when evaluating a startup's pivot strategy effectiveness and sustainability?,True,True,True,2.09,3,3,4
+123,Evaluating pivot strategies in startups,What metrics are essential when evaluating a startup's pivot strategy effectiveness and sustainability?,False,False,True,3.59,3,3,4
+138,Convergence trends in telecom and tech,Evaluate a startup's strategy to leverage convergence in telecom and tech from a VC perspective.,True,True,True,2.69,3,3,4
+139,Convergence trends in telecom and tech,Evaluate a startup's strategy to leverage convergence in telecom and tech from a VC perspective.,False,True,False,2.23,3,3,4
+140,Valuation implications of tech stack choices,How do tech stack choices affect a startup's valuation in a funding round?,True,True,True,2.15,3,3,4
+141,Valuation implications of tech stack choices,How do tech stack choices affect a startup's valuation in a funding round?,False,True,False,2.46,3,3,4
+142,Use of special purpose acquisition companies (SPACs) in tech,Explain key considerations for a tech startup going public via a SPAC merger.,True,True,True,2.66,3,3,4
+143,Use of special purpose acquisition companies (SPACs) in tech,Explain key considerations for a tech startup going public via a SPAC merger.,False,False,True,2.15,3,3,4
+156,Platform dependency risks in SaaS businesses,How should SaaS startups evaluate and mitigate platform dependency risks?,True,True,True,2.14,3,2,4
+157,Platform dependency risks in SaaS businesses,How should SaaS startups evaluate and mitigate platform dependency risks?,False,True,False,2.07,3,3,4
+158,Raising capital through crowdfunding platforms,What are the key factors a startup should focus on when raising capital through crowdfunding platforms?,True,True,True,2.67,3,1,4
+159,Raising capital through crowdfunding platforms,What are the key factors a startup should focus on when raising capital through crowdfunding platforms?,False,True,False,2.12,3,0,4

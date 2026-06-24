@@ -1,0 +1,62 @@
+{
+  "metrics": {
+    "stateless": {
+      "n": 160,
+      "acc": 68.125,
+      "pass_n": 80,
+      "pass_recall": 98.75,
+      "fail_n": 80,
+      "fail_recall": 37.5,
+      "balanced_acc": 68.125
+    },
+    "maj_self": {
+      "n": 160,
+      "acc": 68.75,
+      "pass_n": 80,
+      "pass_recall": 98.75,
+      "fail_n": 80,
+      "fail_recall": 38.75,
+      "balanced_acc": 68.75
+    },
+    "maj_oracle": {
+      "n": 160,
+      "acc": 64.375,
+      "pass_n": 80,
+      "pass_recall": 98.75,
+      "fail_n": 80,
+      "fail_recall": 30.0,
+      "balanced_acc": 64.375
+    },
+    "maj_balanced": {
+      "n": 160,
+      "acc": 68.125,
+      "pass_n": 80,
+      "pass_recall": 98.75,
+      "fail_n": 80,
+      "fail_recall": 37.5,
+      "balanced_acc": 68.125
+    }
+  },
+  "deltas": {
+    "maj_self": {
+      "delta_pp": 0.6249999999999978,
+      "ci_lo": -3.749999999999998,
+      "ci_hi": 5.000000000000004
+    },
+    "maj_oracle": {
+      "delta_pp": -3.749999999999998,
+      "ci_lo": -7.500000000000007,
+      "ci_hi": 0.0
+    },
+    "maj_balanced": {
+      "delta_pp": 0.0,
+      "ci_lo": -4.375000000000007,
+      "ci_hi": 4.375000000000007
+    },
+    "balanced_minus_self": {
+      "delta_pp": -0.6249999999999978,
+      "ci_lo": -3.125,
+      "ci_hi": 1.2500000000000067
+    }
+  }
+}

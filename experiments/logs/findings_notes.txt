@@ -1,0 +1,3 @@
+exp4 KEY: fail-recall asym 32.5 -> sym 35.0 (Δ+2.5pp, =1 item). post-thr neg 2.01->2.71. stateless fail-recall also 35.0.
+exp1 2x2 (vs clean A=66.2% bal): B row/frozen 60.0% (bal 63.4, Δbal -2.9, raw drop is 44/36 imbalance); C q/writeback 67.5% (Δ+1.2); D row/writeback 63.7% (bal 66.8).
+=> NEITHER modeled leakage channel reproduces the conventional +6-10pp gain at n=80 seed42. TENSION with paper claim that the apparent gain was these two channels. Needs reframe: maybe conventional gain was a different mechanism (interleaved build+test) or itself noise. Report honestly to Bader.

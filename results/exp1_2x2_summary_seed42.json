@@ -1,0 +1,54 @@
+[
+  {
+    "cell": "A_qsplit_frozen",
+    "split": "split_by_question",
+    "writeback": false,
+    "memory_grew": false,
+    "n": 80,
+    "acc": 66.25,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 35.0,
+    "balanced_acc": 66.25
+  },
+  {
+    "cell": "B_rowsplit_frozen",
+    "split": "split_by_row",
+    "writeback": false,
+    "memory_grew": false,
+    "n": 80,
+    "acc": 60.0,
+    "pass_n": 36,
+    "pass_recall": 97.22222222222221,
+    "fail_n": 44,
+    "fail_recall": 29.545454545454547,
+    "balanced_acc": 63.38383838383838
+  },
+  {
+    "cell": "C_qsplit_writeback",
+    "split": "split_by_question",
+    "writeback": true,
+    "memory_grew": true,
+    "n": 80,
+    "acc": 67.5,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 37.5,
+    "balanced_acc": 67.5
+  },
+  {
+    "cell": "D_rowsplit_writeback",
+    "split": "split_by_row",
+    "writeback": true,
+    "memory_grew": true,
+    "n": 80,
+    "acc": 63.74999999999999,
+    "pass_n": 36,
+    "pass_recall": 97.22222222222221,
+    "fail_n": 44,
+    "fail_recall": 36.36363636363637,
+    "balanced_acc": 66.79292929292929
+  }
+]

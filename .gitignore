@@ -26,3 +26,12 @@ neo4j_import/
 # OS
 .DS_Store
 
+
+# Env backups
+.env.*
+
+# Experiment run logs (keep findings_notes.txt)
+experiments/logs/*.log
+
+# Message drafts (keep local, do not version)
+paper/message_*.txt

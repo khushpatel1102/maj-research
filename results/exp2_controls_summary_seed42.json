@@ -1,0 +1,51 @@
+{
+  "stateless": {
+    "n": 80,
+    "acc": 66.25,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 35.0,
+    "balanced_acc": 66.25
+  },
+  "cheating_oracle": {
+    "n": 80,
+    "acc": 78.75,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 60.0,
+    "balanced_acc": 78.75,
+    "flip_rate": 15.0
+  },
+  "random_context": {
+    "n": 80,
+    "acc": 65.0,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 32.5,
+    "balanced_acc": 65.0,
+    "flip_rate": 3.75
+  },
+  "label_shuffled": {
+    "n": 80,
+    "acc": 63.74999999999999,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 30.0,
+    "balanced_acc": 63.75,
+    "flip_rate": 2.5
+  },
+  "irrelevant_samelen": {
+    "n": 80,
+    "acc": 68.75,
+    "pass_n": 40,
+    "pass_recall": 97.5,
+    "fail_n": 40,
+    "fail_recall": 40.0,
+    "balanced_acc": 68.75,
+    "flip_rate": 5.0
+  }
+}
