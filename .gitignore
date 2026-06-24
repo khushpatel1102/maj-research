@@ -35,3 +35,12 @@ experiments/logs/*.log
 
 # Message drafts (keep local, do not version)
 paper/message_*.txt
+
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.out
+paper/*.pdf
+paper/missfont.log
