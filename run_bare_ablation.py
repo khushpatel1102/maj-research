@@ -1,128 +1,181 @@
-"""
-run_bare_ablation.py -- structure ablation runner.
-
-Builds a "bare" self-written memory containing only Policy and Attempt
-nodes (no Issue, Fix, or Semantic extraction) and evaluates MAJ on the
-same held-out test split used in the rest of the leakage-free protocol.
-
-This directly answers Bader's structure-ablation question: does the
-elaborate 5-node typed graph beat a plain contrastive memory of past
-attempts? If MAJ accuracy on the bare condition is comparable to MAJ on
-the full self-written schema, the extra schema is not earning its
-complexity.
-
-The runner uses the same frozen-memory audit and the same evaluate_test_set
-machinery as benchmark_leakage_free.py, so output CSVs and audit JSONs
-plug into analyze_stats.py and reproduce_all.py automatically.
-
-Usage
------
-    python run_bare_ablation.py --model gpt-4o --seed 42
-"""
-
-from __future__ import annotations
-
-import sys
-import argparse
-from pathlib import Path
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-
-sys.path.insert(0, "src")
-
-from models import Policy, Attempt
-from graph_manager import GraphManager
-from benchmark_leakage_free import (
-    DATA_PATH, RESULTS_DIR, EVALSBENCH_GOAL,
-    evalsbench_to_maj, split_by_question, evaluate_test_set,
-)
-from judge import judge as run_judge  # not used here but keeps imports honest
-
-
-def build_bare_memory(train_df, gm):
-    """
-    Build memory with Policy and Attempt nodes only.
-
-    Labels are the judge's own verdicts on the training set, exactly
-    like self_written. The difference is that no Issue, Fix, or Semantic
-    extraction is performed — the graph carries only the contrastive
-    attempt signal.
-    """
-    from judge import judge_with_memory  # imported here to avoid circulars
-
-    print(f"\nBuilding BARE memory (Policy + Attempt only) "
-          f"from {len(train_df)} training samples...")
-    for _, row in tqdm(train_df.iterrows(), total=len(train_df),
-                       desc="bare memory"):
-        sample = evalsbench_to_maj(row)
-        try:
-            result = judge_with_memory(
-                task=sample["task"], agent_output=sample["agent_output"],
-                graph_manager=gm, goal=EVALSBENCH_GOAL, model="gpt-4o"
-            )
-            # Only commit the Policy and Attempt; ignore issues, fixes, semantics.
-            gm.create_policy(result["policy"])
-            gm.create_attempt(result["attempt"])
-            for rel in result["relationships"]:
-                if rel["type"] == "SATISFIES":
-                    gm.link_attempt_satisfies_policy(
-                        rel["from_id"], rel["to_id"])
-        except Exception as e:
-            print(f"  build error: {e}")
-
-    counts = gm.driver.execute_query(
-        "MATCH (n) RETURN labels(n)[0] AS label, count(n) AS cnt")
-    print("Bare memory contents:")
-    for r in counts.records:
-        print(f"  {r['label']}: {r['cnt']}")
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default="gpt-4o")
-    ap.add_argument("--seed", type=int, default=42)
-    args = ap.parse_args()
-
-    RESULTS_DIR.mkdir(exist_ok=True)
-    df = pd.read_csv(DATA_PATH / "benchmark_df.csv")
-    train_df, test_df = split_by_question(df, 0.5, args.seed)
-
-    print("=" * 60)
-    print(f"STRUCTURE ABLATION: BARE MEMORY  (seed {args.seed})")
-    print("=" * 60)
-    print(f"Train: {len(train_df)} samples ({len(train_df)//2} questions)")
-    print(f"Test:  {len(test_df)} samples ({len(test_df)//2} questions)")
-
-    gm = GraphManager()
-    gm.clear_all()
-    build_bare_memory(train_df, gm)
-
-    tag = "" if args.seed == 42 else f"_seed{args.seed}"
-    out_csv = RESULTS_DIR / f"lf_bare_maj{tag}.csv"
-    out_audit = RESULTS_DIR / f"lf_bare_maj{tag}_audit.json"
-
-    print(f"\nEvaluating MAJ on the bare memory graph...")
-    results_df, acc, lat = evaluate_test_set(
-        test_df, "maj", gm, args.model, audit_log_path=out_audit
-    )
-    results_df.to_csv(out_csv, index=False)
-
-    print("\n" + "=" * 60)
-    print("STRUCTURE-ABLATION RESULTS")
-    print("=" * 60)
-    print(f"  bare maj : {acc:.1f}%  ({lat:.1f}s/sample)")
-    print(f"  CSV      : {out_csv}")
-    print(f"  audit    : {out_audit}")
-    print()
-    print("Compare against (same seed):")
-    print(f"  full self-written maj  -> results/leakage_free_maj.csv  "
-          f"(seed 42 = 63.7%)")
-    print(f"  full self-written maj  -> results/lf_self_written_maj_seed123.csv "
-          f"(seed 123 = 67.5%)")
-    print(f"  stateless              -> results/leakage_free_stateless.csv "
-          f"(seed 42 = 65.0%)")
-
-
-if __name__ == "__main__":
-    main()
+s0 [direct: primary] factory_dev> db.utility_agents.find()
+[
+  {
+    _id: ObjectId('691ef526b201cc7932e9496a'),
+    agent_id: '691eed8766a08f7a747591c9',
+    created_at: ISODate('2025-11-20T11:01:58.048Z'),
+    updated_at: ISODate('2025-11-20T11:01:58.048Z'),
+    agent_name: 'artifact_pptx_generator',
+    description: 'Agent for generating PPT markdown content'
+  },
+  {
+    _id: ObjectId('68e7c0f547bdf2b388e9496a'),
+    agent_id: '68e7c040998896ef659a945a',
+    created_at: ISODate('2025-10-09T14:04:37.625Z'),
+    updated_at: ISODate('2025-10-09T14:04:37.625Z'),
+    agent_name: 'artifact_pdf_generator',
+    description: 'Agent for generating PDF markdown content'
+  },
+  {
+    _id: ObjectId('69d78f020844d4a21a27eff0'),
+    agent_id: '69d78f020844d4a21a27efef',
+    agent_name: 'ase_simulation_evaluation',
+    description: 'ASE: evaluates simulation traces against metrics',
+    json_file: 'ase_simulation_evaluation.json',
+    created_at: ISODate('2026-04-09T11:35:30.770Z'),
+    updated_at: ISODate('2026-04-09T11:35:30.770Z')
+  },
+  {
+    _id: ObjectId('69d78f020844d4a21a27eff2'),
+    agent_id: '69d78f020844d4a21a27eff1',
+    agent_name: 'ase_agent_hardening',
+    description: 'ASE: proposes improved agent config from failures',
+    json_file: 'ase_agent_hardening.json',
+    created_at: ISODate('2026-04-09T11:35:30.790Z'),
+    updated_at: ISODate('2026-04-09T11:35:30.790Z')
+  },
+  {
+    _id: ObjectId('69b114dfe27b078603e401dd'),
+    agent_id: '69b114dfe27b078603e401dc',
+    agent_name: 'prompt_designer',
+    description: 'Agent for designing AI prompts through conversation',
+    json_file: 'generate_with_ai.json',
+    created_at: ISODate('2026-03-11T07:08:15.261Z'),
+    updated_at: ISODate('2026-03-11T07:08:15.261Z')
+  },
+  {
+    _id: ObjectId('69f09d7bb759e2ca9b5f4a15'),
+    agent_id: '69f09d7bb759e2ca9b5f4a14',
+    agent_name: 'tool_builder',
+    description: 'Agent for selecting and configuring tools for a given use-case',
+    json_file: 'tool_builder_agent.json',
+    created_at: ISODate('2026-04-28T11:43:55.927Z'),
+    updated_at: ISODate('2026-04-28T11:43:55.927Z')
+  },
+  {
+    _id: ObjectId('69d78f020844d4a21a27efee'),
+    agent_id: '69d78f020844d4a21a27efed',
+    agent_name: 'ase_simulation_generator',
+    description: 'ASE: default test-case / simulation generator',
+    json_file: 'ase_simulation_generator.json',
+    created_at: ISODate('2026-04-09T11:35:30.752Z'),
+    updated_at: ISODate('2026-04-09T11:35:30.752Z')
+  },
+  {
+    _id: ObjectId('69b114dfe27b078603e401db'),
+    agent_id: '69b114dfe27b078603e401da',
+    agent_name: 'artifact_ppt_generator',
+    description: 'Agent for generating PowerPoint presentations',
+    json_file: 'pptx_agent.json',
+    created_at: ISODate('2026-03-11T07:08:15.236Z'),
+    updated_at: ISODate('2026-03-11T07:08:15.236Z')
+  },
+  {
+    _id: ObjectId('69b114dfe27b078603e401e1'),
+    agent_id: '69b114dfe27b078603e401e0',
+    agent_name: 'openapi_schema_convertor',
+    description: 'Agent for converting curl requests to OpenAPI schemas',
+    json_file: 'openapi_convertor.json',
+    created_at: ISODate('2026-03-11T07:08:15.301Z'),
+    updated_at: ISODate('2026-03-11T07:08:15.301Z')
+  },
+  {
+    _id: ObjectId('69f09d7cd1052dd1ec4868c9'),
+    agent_id: '69f09d7cd1052dd1ec4868c8',
+    agent_name: 'ase_simulation_generator_free_text',
+    description: 'ASE: simulation generator returning free-text (non-JSON) test cases',
+    json_file: 'ase_simulation_generator_free_text.json',
+    created_at: ISODate('2026-04-28T11:43:56.067Z'),
+    updated_at: ISODate('2026-04-28T11:43:56.067Z')
+  },
+  {
+    _id: ObjectId('68e7c13447bdf2b388e9496c'),
+    agent_id: '68e7c075aff617987f1861af',
+    created_at: ISODate('2025-10-09T14:05:40.132Z'),
+    updated_at: ISODate('2025-10-09T14:05:40.132Z'),
+    agent_name: 'artifact_docx_generator',
+    description: 'Agent for generating DOCX file'
+  },
+  {
+    _id: ObjectId('68e7c11a47bdf2b388e9496b'),
+    agent_id: '68e7c060998896ef659a9649',
+    created_at: ISODate('2025-10-09T14:05:14.664Z'),
+    updated_at: ISODate('2025-10-09T14:05:14.664Z'),
+    agent_name: 'artifact_csv_generator',
+    description: 'Agent for generating CSV file'
+  },
+  {
+    _id: ObjectId('69f09d7bd1052dd1ec4868c5'),
+    agent_id: '69f09d7bd1052dd1ec4868c4',
+    agent_name: 'ase_persona_generator_free_text',
+    description: 'ASE: persona generator accepting free-text agent descriptions',
+    json_file: 'ase_persona_generator_free_text.json',
+    created_at: ISODate('2026-04-28T11:43:55.991Z'),
+    updated_at: ISODate('2026-04-28T11:43:55.991Z')
+  },
+  {
+    _id: ObjectId('69f09d7cd1052dd1ec4868c7'),
+    agent_id: '69f09d7cd1052dd1ec4868c6',
+    agent_name: 'ase_scenario_generator_free_text',
+    description: 'ASE: scenario generator accepting free-text agent descriptions',
+    json_file: 'ase_scenario_generator_free_text.json',
+    created_at: ISODate('2026-04-28T11:43:56.030Z'),
+    updated_at: ISODate('2026-04-28T11:43:56.030Z')
+  },
+  {
+    _id: ObjectId('69b114dfe27b078603e401df'),
+    agent_id: '69b114dfe27b078603e401de',
+    agent_name: 'magic_prompt',
+    description: 'Agent for optimizing and rewriting prompts',
+    json_file: 'magic_prompt.json',
+    created_at: ISODate('2026-03-11T07:08:15.277Z'),
+    updated_at: ISODate('2026-03-11T07:08:15.277Z')
+  },
+  {
+    _id: ObjectId('69b114dfe27b078603e401e3'),
+    agent_id: '69b114dfe27b078603e401e2',
+    agent_name: 'json_schema_generator',
+    description: 'Agent for generating valid JSON schemas',
+    json_file: 'tool_schema_generator.json',
+    created_at: ISODate('2026-03-11T07:08:15.327Z'),
+    updated_at: ISODate('2026-03-11T07:08:15.327Z')
+  },
+  {
+    _id: ObjectId('69b114dfe27b078603e401e5'),
+    agent_id: '69b114dfe27b078603e401e4',
+    agent_name: 'conversational_builder',
+    description: 'Proxy agent for Anthropic Sonnet used in conversational builder',
+    json_file: 'conversational_builder.json',
+    created_at: ISODate('2026-03-11T07:08:15.347Z'),
+    updated_at: ISODate('2026-03-11T07:08:15.347Z')
+  },
+  {
+    _id: ObjectId('69d78f020844d4a21a27efea'),
+    agent_id: '69d78f020844d4a21a27efe9',
+    agent_name: 'ase_persona_generator',
+    description: 'ASE: generates user personas for simulation',
+    json_file: 'ase_persona_generator.json',
+    created_at: ISODate('2026-04-09T11:35:30.715Z'),
+    updated_at: ISODate('2026-04-09T11:35:30.715Z')
+  },
+  {
+    _id: ObjectId('69d78f020844d4a21a27efec'),
+    agent_id: '69d78f020844d4a21a27efeb',
+    agent_name: 'ase_scenario_generator',
+    description: 'ASE: generates scenarios for simulation',
+    json_file: 'ase_scenario_generator.json',
+    created_at: ISODate('2026-04-09T11:35:30.732Z'),
+    updated_at: ISODate('2026-04-09T11:35:30.732Z')
+  },
+  {
+    _id: ObjectId('69d78f020844d4a21a27eff4'),
+    agent_id: '69d78f020844d4a21a27eff3',
+    agent_name: 'ase_json_simulation_generator',
+    description: 'ASE: simulation generator for json_schema response agents',
+    json_file: 'ase_json_simulation_generator.json',
+    created_at: ISODate('2026-04-09T11:35:30.811Z'),
+    updated_at: ISODate('2026-04-09T11:35:30.811Z')
+  }
+]
+Type "it" for more
+rs0 [direct: primary] factory_dev>

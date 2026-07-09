@@ -1,48 +1,59 @@
-% =====================================================================
-%  ACL-style paper distilled from the bachelor's thesis
-%  "When Does Memory Help an LLM Judge?"
-%  Khush Patel, Bader Rasheed, Innopolis University, 2026
-% =====================================================================
-\documentclass[11pt]{article}
-\usepackage[final]{acl}
-\usepackage{times}
-\usepackage{latexsym}
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage{microtype}
-\renewcommand{\ttdefault}{lmtt}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{amsmath}
+%% =====================================================================
+%%  CEUR-WS single-column version for ELMKE 2026 (ISWC)
+%%  "When Does Memory Help an LLM Judge?"
+%%  Converted from the ACL two-column source (paper.tex).
+%% =====================================================================
+\documentclass[]{ceurart}
+
+\sloppy
+
+%% Math + tables + graphics used by the body (ceurart already loads
+%% amsmath/graphicx/natbib, but we load the extras the body needs).
 \usepackage{amssymb}
 \usepackage{amsthm}
+\usepackage{booktabs}
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta}
 \newtheorem{proposition}{Proposition}
 
-\title{When Does Memory Help an LLM Judge? \\ A Provably Leakage-Free, Audited Evaluation of Memory-Augmented Judging}
-
-
-\author{draft \\
-  Innopolis University \\
-  \texttt{@innopolis.university} }
-
-
-% \author{Khush Patel \\
-%   Innopolis University \\
-%   \texttt{k.patel@innopolis.university} \\\And
-%   Bader Rasheed \\
-%   Innopolis University \\
-%   \texttt{b.rasheed@innopolis.university} \\}
-
-
-
 \begin{document}
-\maketitle
+
+\copyrightyear{2026}
+\copyrightclause{Copyright for this paper by its authors.
+  Use permitted under Creative Commons License Attribution 4.0
+  International (CC BY 4.0).}
+
+\conference{ELMKE 2026: 4th Workshop on Evaluation of Language Models in
+  Knowledge Engineering, co-located with ISWC 2026, October 25--29, 2026,
+  Bari, Italy}
+
+\title{When Does Memory Help an LLM Judge? A Provably Leakage-Free,
+  Audited Evaluation of Memory-Augmented Judging}
+
+\author[1]{Khush Patel}[%
+email=k.patel@innopolis.university,
+]
+\cormark[1]
+\author[1]{Bader Rasheed}[%
+email=b.rasheed@innopolis.university,
+]
+\address[1]{Innopolis University, Innopolis, Russian Federation}
+\cortext[1]{Corresponding author.}
 
 \begin{abstract}
 Giving an LLM judge a persistent memory of its past evaluations seems like it should help. We build such a judge and evaluate it under two protocols. Under a conventional protocol (memory updated during evaluation, related test items not separated), memory appears to add 6--10 accuracy points; under a careful one, the gain disappears. The careful protocol is leakage-free (question-level data split plus frozen memory) with a two-layer audit (SHA-256 graph fingerprints plus runtime write-blocking) that proves, for every run, that memory was not modified during evaluation. Under this protocol, with GPT-4o, no memory or tree-search configuration significantly outperforms a plain stateless judge, and an apparent catastrophic collapse under memory poisoning turns out to be a harness defect, not a system property. A per-item verdict analysis explains the null: memory changes only 10\% of verdicts, and the verdicts it changes follow the judge's leniency bias rather than the ground truth. We bound the achievable benefit of memory by the conditional information it carries about the label plus the judge's own decision noise, characterize when memory should help, and propose practical remedies. The protocol and audit are released as a reusable instrument.
 \end{abstract}
+
+\begin{keywords}
+  LLM-as-a-Judge \sep
+  evaluation methodology \sep
+  memory-augmented evaluation \sep
+  knowledge graphs \sep
+  evaluation leakage \sep
+  negative result
+\end{keywords}
+
+\maketitle
 
 \section{Introduction}
 
@@ -62,7 +73,7 @@ We verify it. The contributions:
 
 \section{Related Work}
 
-\paragraph{LLM-as-a-Judge.} G-Eval, MT-Bench, and Prometheus \citep{geval2023, mt_bench2023, prometheus2023} showed LLM judges can track human raters. The judges also carry position, length, and self-preference biases \citep{llm_judge_bias2024, position_bias2024}, fragile agreement, and poor calibration \citep{chateval2023, llm_judge_agreement2024, judge_calibration2024}. A stateless judge additionally has no way to be consistent across related items, which is the opening for memory.
+\paragraph{LLM-as-a-Judge.} G-Eval, MT-Bench, and Prometheus \citep{geval2023, mt_bench2023, prometheus2023} showed LLM judges can track human raters. The judges also carry position, length, and self-preference biases \citep{llm_judge_bias2024, position_bias2024}, fragile agreement, and poor calibration \citep{chateval2023, llm_judge_agreement2024, judge_calibration2024}. The reliability of LLMs as evaluators is an active concern in knowledge engineering as well: \citet{hannah2025knowledge} use an LLM as a proxy evaluator of knowledge quality and report that it ``shows promise'' but is not yet dependable, and evaluation-quality studies of LLM-generated knowledge artefacts reach similarly cautious conclusions \citep{llugiqi2025experts, fathallah2024llms4life}. A stateless judge additionally has no way to be consistent across related items, which is the opening for memory.
 
 \paragraph{Retrieval- and memory-augmented systems.} RAG \citep{rag_original2020} and its adaptive variants \citep{active_rag2023, self_rag2023} condition generation on retrieved evidence. Agent memory systems such as MemGPT \citep{memgpt2023}, Generative Agents \citep{generative_agents2023}, and Reflexion \citep{reflexion2023} store episodes or self-feedback for reuse. A memory-augmented judge retrieves past evaluations as contrastive references. None of this prior work treats memory as a leakage source or organizes it as a typed graph.
 
@@ -177,7 +188,7 @@ Four conditions isolate where memory comes from and how good it is: \textbf{no-m
 
 \subsection{The motivating observation}
 
-Before the protocol existed, we measured the system conventionally: memory updated during evaluation, paired questions not separated. Memory appeared to help substantially: gains of 6--10 points across capable judge models, and seeding memory with ground-truth examples appeared to lift cold-start accuracy from 78\% to 91\%. We did not retain per-sample logs for these runs, so we report them only as the motivating observation. Several of these configurations contain one or both leakage channels by construction, which is precisely the methodological problem this paper addresses.
+Before the protocol existed, we measured the system conventionally: memory updated during evaluation, paired questions not separated. Memory appeared to help substantially: gains of 6--10 points across capable judge models, and seeding memory with ground-truth examples appeared to lift cold-start accuracy from 78\% to 91\%. We did not retain per-sample logs for these runs, so we report them only as the motivating observation. Several of these configurations interleaved memory-building with evaluation and did not separate paired questions, exposing them to evaluation leakage; \S\ref{sec:channels} decomposes the two structurally isolatable channels and finds, notably, that neither alone reproduces the gain, so we attribute it to the compound leak of the original interleaved protocol and/or sampling noise rather than to a single clean channel.
 
 \subsection{Clean-memory comparison}
 
@@ -202,14 +213,14 @@ Table~\ref{tab:clean} shows the central result: no configuration outperforms the
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/accuracy_ci.png}
+\includegraphics[width=0.72\linewidth]{figures/accuracy_ci.png}
 \caption{Per-mode accuracy with Wilson 95\% CIs on the audited test set; every interval overlaps the stateless baseline.}
 \label{fig:accuracy}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/paired_deltas.png}
+\includegraphics[width=0.72\linewidth]{figures/paired_deltas.png}
 \caption{Paired mode-versus-mode accuracy differences with bootstrap 95\% CIs; every clean-memory interval crosses zero.}
 \label{fig:deltas}
 \end{figure}
@@ -222,7 +233,7 @@ We attempted to recover the effect in three ways; none succeeds, and each failur
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/structure_ablation.png}
+\includegraphics[width=0.72\linewidth]{figures/structure_ablation.png}
 \caption{Structure ablation: stateless baseline, bare Policy-plus-Attempt memory, and the full five-type schema, with Wilson 95\% CIs.}
 \label{fig:ablation}
 \end{figure}
@@ -251,10 +262,99 @@ Our earlier, un-audited harness reported that MCTS-Judge+Memory collapsed to 21.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/poisoning_curve.png}
+\includegraphics[width=0.72\linewidth]{figures/poisoning_curve.png}
 \caption{Accuracy as a function of the memory poisoning rate under the corrected, audited harness, with Wilson 95\% CI bands; neither mode shows a significant downward trend.}
 \label{fig:poison}
 \end{figure}
+
+\subsection{Bracketing the null: can the judge use memory at all?}
+\label{sec:controls}
+
+The experiments in this and the following two subsections are a later, independent run, so their stateless baseline is 66.2--68.1\% rather than the 70.0\% of \S\ref{sec:results}. That $\approx4$-point drift is not a discrepancy to explain away; it sits inside the $\approx5$-point cross-seed band we already reported (\S\ref{sec:results}), and it is worth stating plainly because it is the same stability the paper argues for, showing up again: the baseline wobbles by a few points between runs, and so does everything measured against it, which is exactly why every claim here is a \emph{paired} comparison on identical items rather than a difference of two headline numbers.
+
+A null result invites an uninteresting explanation: perhaps the judge simply cannot read retrieved memory, so \emph{no} memory content would ever move its verdict. We rule this out with a memory-use control experiment. Holding the prompt template fixed, we replace the retrieved block with (i) a \emph{cheating oracle}: the test item's own ground-truth verdict injected as an exemplar; and three negative controls: (ii) a random unrelated attempt, (iii) label-shuffled exemplars, and (iv) a topically irrelevant block token-matched to the oracle block. All four route through the identical memory prompt, so any accuracy change is attributable to the injected content alone.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+Injected memory & Acc. & Fail-rec. & Flip\% \\
+\midrule
+Stateless (none) & 66.2 & 35.0 & -- \\
+\textbf{Cheating oracle} & \textbf{78.8} & \textbf{60.0} & 15.0 \\
+Random context & 65.0 & 32.5 & 3.8 \\
+Label-shuffled & 63.7 & 30.0 & 2.5 \\
+Irrelevant (len-matched) & 68.8 & 40.0 & 5.0 \\
+\bottomrule
+\end{tabular}
+\caption{Memory-use controls (GPT-4o, $n{=}80$). Informative memory lifts accuracy $+12.5$ points, almost entirely on failing items; three uninformative controls sit at the stateless baseline. Flip\% is the fraction of verdicts changed relative to stateless.}
+\label{tab:controls}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.86\linewidth]{figures/memory_controls.png}
+\caption{Memory-use controls. Only the cheating oracle (informative memory) clears the stateless baseline band; the three uninformative controls fall inside it. Bars are accuracy with Wilson 95\% CIs; the shaded band is the stateless CI.}
+\label{fig:controls}
+\end{figure}
+
+Table~\ref{tab:controls} and Figure~\ref{fig:controls} show a clean dissociation. When memory carries the answer, accuracy rises $+12.5$ points, concentrated on failing items (fail-recall $35\to60$); per item, the oracle flips eleven verdicts from wrong to right and only one the other way. The three uninformative controls stay within $\pm3$ points of the no-memory baseline. \emph{The judge is fully capable of using memory when memory is informative}; the null elsewhere is therefore a property of the benchmark's memory carrying no verdict-relevant signal, not of a memory-blind judge. This is the positive half of the bracket that Proposition~\ref{prop:bayes} predicts: accuracy moves exactly when the injected content changes $P(Y\mid X,M)$, and not otherwise.
+
+\subsection{Cross-validated reliability}
+\label{sec:cv}
+
+To confirm the null is not an artifact of a single 80-item split, we run five-fold grouped cross-validation at the question level (every one of the 160 items is a held-out test item in exactly one fold; memory is built on the other four folds), for the four primary modes only. Confidence intervals come from a question-cluster bootstrap that resamples questions, keeping each pass/fail pair together.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+Mode & Acc. & $\Delta$ vs.\ stateless [95\% CI] \\
+\midrule
+Stateless & 68.1 & -- \\
+MAJ (self) & 68.8 & $+0.6$ $[-3.8, +5.0]$ \\
+MAJ (oracle) & 64.4 & $-3.8$ $[-7.5, 0.0]$ \\
+MAJ (balanced) & 68.1 & $\phantom{+}0.0$ $[-4.4, +4.4]$ \\
+\bottomrule
+\end{tabular}
+\caption{Grouped five-fold cross-validation over all $n{=}160$ items, question-cluster bootstrap CIs. No mode significantly beats stateless; oracle memory trends slightly worse. The balanced-minus-self contrast is $-0.6$ $[-3.1, +1.3]$.}
+\label{tab:cv}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.86\linewidth]{figures/cv_deltas.png}
+\caption{Grouped five-fold CV ($n{=}160$): paired accuracy deltas vs.\ stateless with 95\% question-cluster-bootstrap CIs. Every interval crosses zero; the oracle interval touches zero from below.}
+\label{fig:cv}
+\end{figure}
+
+Table~\ref{tab:cv} and Figure~\ref{fig:cv} confirm the null at double the sample size: MAJ with self-written memory is $+0.6$ points with a CI spanning zero, and oracle memory does not help (its CI touches zero from below, the cleanest single statement that the memory carries no exploitable label signal). This is the negative half of the bracket, and it is now cross-validated rather than resting on one split.
+
+\subsection{Isolating the leakage channels}
+\label{sec:channels}
+
+The motivating observation (\S\ref{sec:results}) attributed the conventional $+6$--$10$ point gain to evaluation leakage. To test which channel is responsible, we cross the two structurally isolatable channels in a $2\times2$: split by question (twins together) versus by row (twins may separate, the paired-item channel), and memory frozen versus written back during evaluation (the write-back channel).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+Cell & Bal.\ acc. & $\Delta$ vs.\ clean \\
+\midrule
+Question $\times$ frozen (clean) & 66.2 & -- \\
+Row $\times$ frozen (paired-item) & 63.4 & $-2.9$ \\
+Question $\times$ write-back & 67.5 & $+1.2$ \\
+Row $\times$ write-back (both) & 66.8 & $+0.6$ \\
+\bottomrule
+\end{tabular}
+\caption{$2\times2$ leakage decomposition (GPT-4o, $n{=}80$, balanced accuracy to neutralize the row split's $44/36$ class imbalance). Neither isolated channel reproduces the conventional gain.}
+\label{tab:channels}
+\end{table}
+
+The result (Table~\ref{tab:channels}) is instructive and, honestly, not what we first assumed: \emph{neither structurally isolatable channel reproduces the conventional gain}. Paired-item leakage moves balanced accuracy $-2.9$ points (the larger raw drop is mostly the $44/36$ class imbalance the row split induces), and write-back alone is $+1.2$. We therefore do not claim the conventional gain was manufactured by these two clean channels. The most consistent explanation is that the original observation arose under a protocol that interleaved memory-building with evaluation, a stronger compound leak than either channel in isolation, and/or was inflated by sampling noise. What survives is the operational point the paper is built on: the apparent gain does not survive any clean, audited re-measurement.
 
 \subsection{Reliability harness}
 
@@ -289,7 +389,7 @@ Every mode judged the identical items, so the effect of memory can be read item 
 
 \textbf{(1) Memory is mostly inert.} MAJ agrees with the stateless verdict on 90\% of items. Swapping self-written memory for oracle changes 7.5\% of verdicts. Deleting three of the five node types changes 8.8\%. The retrieved context block occupies roughly half the prompt and moves almost nothing; the verdict is dominated by the judge's own reading of the task, rubric, and response.
 
-\textbf{(2) The verdicts memory does move follow the judge's bias, not the truth.} For MAJ vs.\ stateless, all six harmful flips turned a correct ``fail'' into a wrong ``pass,'' both helpful flips went the other way, and six of eight flips moved toward ``pass.'' The class-conditional numbers sharpen the picture: every mode is far better on passing items than failing ones (stateless 97.5\% vs.\ 42.5\%), and attaching memory makes the asymmetry \emph{worse} (MAJ: 97.5\% vs.\ 32.5\%). Oracle memory shows the same signature (five of six flips toward pass). Memory here is a leniency anchor: retrieved passing exemplars prime the judge toward ``pass'' on exactly the hard failing items where it was already weakest. The proximate cause is identifiable: the asymmetric retrieval thresholds of \S\ref{sec:system} (positive $\ge 0.85$, negative $\ge 0.92$) systematically admit more passing than failing exemplars into the context, a seemingly innocuous hyperparameter choice that biases the retrieved context by construction.
+\textbf{(2) The verdicts memory does move follow the judge's bias, not the truth.} For MAJ vs.\ stateless, all six harmful flips turned a correct ``fail'' into a wrong ``pass,'' both helpful flips went the other way, and six of eight flips moved toward ``pass.'' The class-conditional numbers sharpen the picture: every mode is far better on passing items than failing ones (stateless 97.5\% vs.\ 42.5\%), and attaching memory makes the asymmetry \emph{worse} (MAJ: 97.5\% vs.\ 32.5\%). Oracle memory shows the same signature (five of six flips toward pass). Memory here acts as a mild leniency anchor: retrieved passing exemplars tend to prime the judge toward ``pass'' on exactly the hard failing items where it was already weakest. A candidate cause is the asymmetric retrieval thresholds of \S\ref{sec:system} (positive $\ge 0.85$, negative $\ge 0.92$), which admit more passing than failing exemplars. We tested this directly: symmetric thresholds do admit more failing exemplars (mean negatives per item $2.01\to2.71$), confirming the mechanism is real, but the accuracy consequence is small, a $+2.5$ point fail-recall recovery (one item in forty) that merely returns balanced MAJ to the stateless baseline, and the cross-validated balanced-minus-self contrast is a reliable zero ($-0.6$ $[-3.1, +1.3]$, \S\ref{sec:cv}). We therefore report the tilt as present in the retrieved context but with an accuracy cost at the edge of detectability at this scale, rather than as a confirmed driver of the null.
 
 \textbf{(3) Structured reasoning partially de-anchors.} MCTS-Judge+Memory is the only memory mode whose flips are net-positive ($b{=}9$ vs.\ $c{=}7$), and it shifts the class balance the other way (94.9\% pass / 48.7\% fail): eight of its nine fixes converted false passes into correct fails. Forcing the judge to score 5--7 rubric-specific subtasks before aggregating dampens the holistic leniency prior, consistent with the anchoring account, though the net effect remains insignificant.
 
@@ -330,7 +430,7 @@ The account above is constructive; it identifies exactly which levers exist.
 
 \paragraph{(c) Use memory at the population level.} The judge's dominant failure is a stable class bias (42.5\% on failing items), and a store of past evaluations is exactly the data needed to \emph{measure} that bias per Semantic category. Instead of injecting instance-level exemplars, let memory supply a calibration correction: a per-category decision-threshold shift estimated from stored (verdict, outcome) pairs. This converts the graph from an ineffective evidence channel into a statistically well-grounded bias-correction channel, and it is the use we consider most promising.
 
-\paragraph{(d) Target regimes where memory moves the posterior.} Proposition~\ref{prop:bayes} predicts memory helps when the judge cannot already solve the task from $X$: weaker judge models with headroom below the rubric; domains whose verdicts depend on conventions the model has never seen (project-specific style guides, private grading norms); workloads with recurring or near-duplicate items. These are falsifiable predictions. They also mark the boundary of our claim: the result is ``no effect for GPT-4o on this benchmark,'' not ``memory never helps,'' and our data do not support the latter.
+\paragraph{(d) Target regimes where memory moves the posterior.} Proposition~\ref{prop:bayes} predicts memory helps when the judge cannot already solve the task from $X$: weaker judge models with headroom below the rubric, a regime in which model size demonstrably changes capability on knowledge-engineering tasks \citep{heim2025scaling}; domains whose verdicts depend on conventions the model has never seen (project-specific style guides, private grading norms); workloads with recurring or near-duplicate items. These are falsifiable predictions. They also mark the boundary of our claim: the result is ``no effect for GPT-4o on this benchmark,'' not ``memory never helps,'' and our data do not support the latter.
 
 \section{Conclusion}
 
@@ -343,6 +443,7 @@ We asked when persistent memory helps an LLM judge, and we required an answer wh
 \section*{Acknowledgments}
 This work was carried out at Innopolis University. We thank the EvalsBench authors for the open benchmark.
 
+\bibliographystyle{elsarticle-num-names}
 \bibliography{references}
 
 \appendix

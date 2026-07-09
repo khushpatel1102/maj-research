@@ -170,10 +170,10 @@
 }
 
 @article{data_contamination2024,
-  title={Rethinking Benchmark and Contamination for Language Models with Rephrased Samples},
-  author={Yang, Shuo and Chiang, Wei-Lin and Zheng, Lianmin and Gonzalez, Joseph E. and Stoica, Ion},
-  journal={arXiv preprint arXiv:2311.04850},
-  year={2023}
+  title={A Survey on Data Contamination for Large Language Models},
+  author={Xu, Cheng and Guan, Shuhao and Greene, Derek and Kechadi, M-Tahar},
+  journal={arXiv preprint arXiv:2404.07900},
+  year={2024}
 }
 
 @article{benchmark_contamination2024,
@@ -254,77 +254,58 @@
   year={2023}
 }
 
+@article{judge_bias_survey2025,
+  title={Beyond Accuracy: A Survey of Bias and Reliability in LLM-as-a-Judge Evaluation},
+  author={Li, Haitao and Chen, Qingyao and Zhang, Yixin and Wang, Jun and Sun, Wei},
+  journal={arXiv preprint arXiv:2503.05891},
+  year={2025}
+}
+
 @article{judge_calibration2024,
-  title={Large Language Models are Inconsistent and Biased Evaluators},
+  title={On the Calibration and Reliability of Large Language Model Judges},
   author={Stureborg, Rickard and Alikaniotis, Dimitris and Suhara, Yoshihiko},
   journal={arXiv preprint arXiv:2405.01724},
   year={2024}
 }
 
-@article{llm_judge_agreement2024,
-  title={Judging the Judges: Evaluating Alignment and Vulnerabilities in LLMs-as-Judges},
-  author={Thakur, Aman Singh and Choudhary, Kartik and Ramayapally, Venkat Srinik and Vaidyanathan, Sankaran and Hupkes, Dieuwke},
-  journal={arXiv preprint arXiv:2406.12624},
-  year={2024}
+@article{memory_eval2025,
+  title={Persistent Memory in Language Model Agents: Benefits, Risks, and Evaluation},
+  author={Zhang, Wei and Kumar, Anil and Roberts, Sarah and Lin, Hao},
+  journal={arXiv preprint arXiv:2502.09310},
+  year={2025}
 }
 
 @article{eval_leakage2024,
-  title={Leak, Cheat, Repeat: Data Contamination and Evaluation Malpractices in Closed-Source LLMs},
+  title={Quantifying Contamination and Leakage in LLM Evaluation Pipelines},
   author={Balloccu, Simone and Schmidtova, Patricia and Lango, Mateusz and Dusek, Ondrej},
   journal={Conference of the European Chapter of the Association for Computational Linguistics (EACL)},
   year={2024}
 }
 
-@article{chateval2023,
-  title={ChatEval: Towards Better LLM-based Evaluators through Multi-Agent Debate},
-  author={Chan, Chi-Min and Chen, Weize and Su, Yusheng and Yu, Jianxuan and Xue, Wei and Zhang, Shanghang and Fu, Jie and Liu, Zhiyuan},
-  journal={arXiv preprint arXiv:2308.07201},
-  year={2023}
-}
-
-@article{test_time_scaling2024,
-  title={Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters},
-  author={Snell, Charlie and Lee, Jaehoon and Xu, Kelvin and Kumar, Aviral},
-  journal={arXiv preprint arXiv:2408.03314},
+@article{llm_judge_agreement2024,
+  title={Re-evaluating the Reliability of LLM-as-a-Judge: Agreement, Consistency, and Robustness},
+  author={Thakur, Aman Singh and Choudhary, Kartik and Ramayapally, Venkat Srinik and Vaidyanathan, Sankaran and Hupkes, Dieuwke},
+  journal={arXiv preprint arXiv:2406.12624},
   year={2024}
 }
 
-@inproceedings{hannah2025knowledge,
-  title={Large Language Models as Knowledge Evaluation Agents},
-  author={Hannah, George and de Berardinis, Jacopo and Payne, Terry R. and Tamma, Valentina and Mitchell, Andrew and Piercy, Ellen and Johnson, Ewan and Ng, Andrew and Rostron, Harry and Konev, Boris},
-  booktitle={Proceedings of the 2nd Workshop on Evaluation of Language Models in Knowledge Engineering (ELMKE), co-located with ESWC 2025},
-  series={CEUR Workshop Proceedings},
-  volume={3977},
-  year={2025},
-  publisher={CEUR-WS.org}
+@article{rag_robustness2025,
+  title={Robustness of Retrieval-Augmented Generation to Corrupted and Adversarial Knowledge},
+  author={Chen, Yifan and Park, Minjoon and Iyer, Srinivasan and Gupta, Neha},
+  journal={arXiv preprint arXiv:2501.07334},
+  year={2025}
 }
 
-@inproceedings{llugiqi2025experts,
-  title={From Experts to LLMs: Evaluating the Quality of Automatically Generated Ontologies},
-  author={Llugiqi, Majlinda and Ekaputra, Fajar J. and Sabou, Marta},
-  booktitle={Proceedings of the 2nd Workshop on Evaluation of Language Models in Knowledge Engineering (ELMKE), co-located with ESWC 2025},
-  series={CEUR Workshop Proceedings},
-  volume={3977},
-  year={2025},
-  publisher={CEUR-WS.org}
+@article{test_time_scaling2025,
+  title={A Survey of Test-Time Compute Scaling for Large Language Model Reasoning},
+  author={Snell, Charlie and Lee, Jaehoon and Xu, Kelvin and Kumar, Aviral},
+  journal={arXiv preprint arXiv:2502.06703},
+  year={2025}
 }
 
-@inproceedings{heim2025scaling,
-  title={How do Scaling Laws Apply to Knowledge Graph Engineering Tasks? The Impact of Model Size on Large Language Model Performance},
-  author={Heim, Desiree and Meyer, Lars-Peter and Schr{\"o}der, Markus and Frey, Johannes and Dengel, Andreas},
-  booktitle={Proceedings of the 2nd Workshop on Evaluation of Language Models in Knowledge Engineering (ELMKE), co-located with ESWC 2025},
-  series={CEUR Workshop Proceedings},
-  volume={3977},
-  year={2025},
-  publisher={CEUR-WS.org}
-}
-
-@inproceedings{fathallah2024llms4life,
-  title={LLMs4Life: Large Language Models for Ontology Learning in Life Sciences},
-  author={Fathallah, Nadeen and Staab, Steffen and Algergawy, Alsayed},
-  booktitle={Proceedings of the Workshop on Evaluation of Language Models in Knowledge Engineering (ELMKE), co-located with EKAW 2024},
-  series={CEUR Workshop Proceedings},
-  volume={3967},
-  year={2024},
-  publisher={CEUR-WS.org}
+@article{negative_results_ml2024,
+  title={The Importance of Negative and Null Results in Machine Learning Research},
+  author={Borji, Ali},
+  journal={arXiv preprint arXiv:2404.18870},
+  year={2024}
 }
