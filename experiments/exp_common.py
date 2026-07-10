@@ -198,6 +198,8 @@ def audited_eval(test_df, predict_fn, gm, *, allow_writes=False, audit_path=None
     snap_before = gm.snapshot()
     rows = []
 
+    from graph_manager import FrozenMemoryViolation
+
     def _loop():
         for idx, row in tqdm(test_df.iterrows(), total=len(test_df), desc=desc):
             s = evalsbench_to_maj(row)
@@ -210,6 +212,10 @@ def audited_eval(test_df, predict_fn, gm, *, allow_writes=False, audit_path=None
                              "expected": s["expected"], "predicted": predicted,
                              "correct": (predicted == s["expected"]),
                              "latency_s": round(dt, 2), **(extra or {})})
+            except FrozenMemoryViolation:
+                # An attempted write during a frozen run is a protocol
+                # violation, not an item error: abort the entire run.
+                raise
             except Exception as e:  # noqa: BLE001
                 dt = time.time() - t0
                 print(f"  ERROR idx={idx}: {e}")

@@ -56,7 +56,7 @@ sys.path.insert(0, 'src')
 
 from models import Policy, Attempt, get_embedding
 from judge import judge, judge_with_memory
-from graph_manager import GraphManager
+from graph_manager import GraphManager, FrozenMemoryViolation
 from mcts_judge import MCTSJudge, MCTSConfig
 from mcts_pipeline import (
     run_stateless,
@@ -303,6 +303,10 @@ def evaluate_test_set(test_df, mode, gm, model, audit_log_path=None):
                     'latency_s': round(elapsed, 2),
                 })
 
+            except FrozenMemoryViolation:
+                # An attempted write during a frozen run is a protocol
+                # violation, not an item error: abort the entire run.
+                raise
             except Exception as e:
                 elapsed = time.time() - start
                 total_time += elapsed

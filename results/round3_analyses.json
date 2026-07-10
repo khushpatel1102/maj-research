@@ -1,0 +1,66 @@
+{
+  "length_baseline": {
+    "train_acc": 78.8,
+    "test_acc": 75.0,
+    "direction": "longer=pass",
+    "threshold_chars": 2619,
+    "verdict_length_pointbiserial_r": 0.27
+  },
+  "equivalence": {
+    "random_context": {
+      "delta_pp": -1.25,
+      "ci90_lo": -5.0,
+      "ci90_hi": 2.5,
+      "equivalent_pm5pp": false
+    },
+    "label_shuffled": {
+      "delta_pp": -2.5,
+      "ci90_lo": -5.0,
+      "ci90_hi": 0.0,
+      "equivalent_pm5pp": false
+    },
+    "irrelevant_samelen": {
+      "delta_pp": 2.5,
+      "ci90_lo": -1.25,
+      "ci90_hi": 6.25,
+      "equivalent_pm5pp": false
+    }
+  },
+  "sensitivity": {
+    "MCTS-J.+M. self": {
+      "reported": 71.8,
+      "n": 78,
+      "total": 80,
+      "all_wrong_bound": 70.0,
+      "all_right_bound": 72.5
+    },
+    "MCTS-J.+M. oracle": {
+      "reported": 65.4,
+      "n": 78,
+      "total": 80,
+      "all_wrong_bound": 63.8,
+      "all_right_bound": 66.2
+    },
+    "MCTS-J.+M. poison10": {
+      "reported": 67.5,
+      "n": 77,
+      "total": 80,
+      "all_wrong_bound": 65.0,
+      "all_right_bound": 68.8
+    },
+    "MCTS-J.+M. poison20": {
+      "reported": 69.7,
+      "n": 76,
+      "total": 80,
+      "all_wrong_bound": 66.2,
+      "all_right_bound": 71.2
+    },
+    "MCTS-J.+M. poison50": {
+      "reported": 65.4,
+      "n": 78,
+      "total": 80,
+      "all_wrong_bound": 63.8,
+      "all_right_bound": 66.2
+    }
+  }
+}

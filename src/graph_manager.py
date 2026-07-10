@@ -39,12 +39,84 @@ _WRITE_METHODS = (
 )
 
 
+import re as _re
+
+# Cypher clauses that mutate the graph. Matched case-insensitively on word
+# boundaries; read-only calls (MATCH..RETURN, CALL db.index.vector.queryNodes)
+# do not contain any of these.
+_WRITE_CLAUSE_RE = _re.compile(
+    r"\b(CREATE|MERGE|DELETE|DETACH|SET|REMOVE|DROP|FOREACH|LOAD\s+CSV)\b",
+    _re.IGNORECASE,
+)
+
+
+def _check_readonly_cypher(query):
+    q = str(query)
+    m = _WRITE_CLAUSE_RE.search(q)
+    if m:
+        raise FrozenMemoryViolation(
+            f"Write-clause Cypher attempted on frozen memory "
+            f"(clause: {m.group(1)!r}): {q[:120]}"
+        )
+
+
+class _ReadOnlySession:
+    """Session wrapper that rejects write-clause Cypher while frozen."""
+
+    def __init__(self, session):
+        self._session = session
+
+    def run(self, query, *args, **kwargs):
+        _check_readonly_cypher(query)
+        return self._session.run(query, *args, **kwargs)
+
+    def __enter__(self):
+        self._session.__enter__()
+        return self
+
+    def __exit__(self, *exc):
+        return self._session.__exit__(*exc)
+
+    def __getattr__(self, name):
+        return getattr(self._session, name)
+
+
+class _ReadOnlyDriver:
+    """Driver proxy that rejects write-clause Cypher while frozen.
+
+    This closes the bypass in which code holding ``gm.driver`` issues raw
+    Cypher writes without going through the guarded GraphManager methods.
+    The clause filter is a syntactic guard (defense in depth); the full-state
+    fingerprint remains the authoritative detector for any mutation.
+    """
+
+    def __init__(self, driver):
+        self._driver = driver
+
+    def session(self, *args, **kwargs):
+        return _ReadOnlySession(self._driver.session(*args, **kwargs))
+
+    def execute_query(self, query, *args, **kwargs):
+        _check_readonly_cypher(query)
+        return self._driver.execute_query(query, *args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._driver, name)
+
+
 class _FrozenMemoryContext:
-    """Context manager that monkey-patches write methods to raise."""
+    """Context manager that blocks writes while frozen.
+
+    Layer A: monkey-patches every GraphManager write method to raise.
+    Layer B: swaps ``gm.driver`` for a read-only proxy that rejects raw
+    Cypher containing write clauses, so holding the driver handle does not
+    bypass the freeze.
+    """
 
     def __init__(self, gm):
         self.gm = gm
         self._originals = {}
+        self._real_driver = None
 
     def __enter__(self):
         def make_blocker(name):
@@ -58,12 +130,17 @@ class _FrozenMemoryContext:
             if hasattr(self.gm, name):
                 self._originals[name] = getattr(self.gm, name)
                 setattr(self.gm, name, make_blocker(name))
+        self._real_driver = self.gm.driver
+        self.gm.driver = _ReadOnlyDriver(self._real_driver)
         return self.gm
 
     def __exit__(self, exc_type, exc, tb):
         for name, fn in self._originals.items():
             setattr(self.gm, name, fn)
         self._originals.clear()
+        if self._real_driver is not None:
+            self.gm.driver = self._real_driver
+            self._real_driver = None
         return False
 
 
@@ -281,17 +358,27 @@ class GraphManager:
 
     def snapshot(self) -> dict:
         """
-        Return a deterministic fingerprint of the current memory state.
+        Return a deterministic fingerprint of the FULL stored graph state.
 
-        Used to verify that no writes occur during evaluation. The snapshot
-        contains per-label node counts, per-relationship-type counts, and a
-        SHA-256 hash over the sorted IDs of every node and edge.
+        The snapshot contains per-label node counts, per-relationship-type
+        counts, and a SHA-256 hash computed over (a) every node's id, labels,
+        and ALL of its properties (serialized deterministically, embeddings
+        included) and (b) every edge triple with its properties. Any mutation
+        of stored state -- adding/removing nodes or edges, OR changing any
+        property in place (e.g. flipping a stored label) -- changes the
+        fingerprint, regardless of which code path performed the write.
 
         Two snapshots taken before and after a frozen-memory evaluation must
-        be byte-identical; any divergence is evidence of a write that
-        violates the leakage-free protocol.
+        be byte-identical; any divergence is evidence of a state mutation
+        that violates the leakage-free protocol.
         """
         import hashlib
+        import json
+
+        def _ser(props: dict) -> str:
+            # Deterministic serialization of a property map.
+            return json.dumps(props, sort_keys=True, default=repr,
+                              separators=(",", ":"))
 
         with self.driver.session() as session:
             node_counts = {}
@@ -307,23 +394,33 @@ class GraphManager:
             ):
                 edge_counts[r["type"]] = r["cnt"]
 
-            node_ids = sorted(
-                r["id"] for r in session.run(
-                    "MATCH (n) WHERE n.id IS NOT NULL RETURN n.id AS id"
+            # Full node state: id + labels + every property (embeddings incl.)
+            node_records = sorted(
+                (r["id"], "+".join(sorted(r["labels"])), _ser(r["props"]))
+                for r in session.run(
+                    """MATCH (n) WHERE n.id IS NOT NULL
+                       RETURN n.id AS id, labels(n) AS labels,
+                              properties(n) AS props"""
                 )
             )
-            edge_keys = sorted(
-                f"{r['from']}-{r['type']}->{r['to']}" for r in session.run(
+            # Full edge state: endpoints + type + edge properties
+            edge_records = sorted(
+                f"{r['from']}-{r['type']}->{r['to']}|{_ser(r['props'])}"
+                for r in session.run(
                     """MATCH (a)-[e]->(b)
                        WHERE a.id IS NOT NULL AND b.id IS NOT NULL
-                       RETURN a.id AS from, type(e) AS type, b.id AS to"""
+                       RETURN a.id AS from, type(e) AS type, b.id AS to,
+                              properties(e) AS props"""
                 )
             )
 
         h = hashlib.sha256()
-        h.update("|".join(node_ids).encode())
-        h.update(b"\n")
-        h.update("|".join(edge_keys).encode())
+        for nid, labels, props in node_records:
+            h.update(f"{nid}|{labels}|{props}\n".encode())
+        h.update(b"--edges--\n")
+        for rec in edge_records:
+            h.update(rec.encode())
+            h.update(b"\n")
 
         return {
             "node_counts": node_counts,
@@ -331,6 +428,7 @@ class GraphManager:
             "total_nodes": sum(node_counts.values()),
             "total_edges": sum(edge_counts.values()),
             "fingerprint": h.hexdigest(),
+            "fingerprint_scope": "full-state-v2 (node ids+labels+all properties; edge triples+properties)",
         }
 
     def freeze(self):
