@@ -62,7 +62,7 @@ def load(name):
 # ---------------------------------------------------------------------------
 def fig_controls():
     arms = [
-        ("Cheating\noracle", "exp2_cheating_oracle_seed42.csv", ACCENT),
+        ("Answer\ninjection", "exp2_cheating_oracle_seed42.csv", ACCENT),
         ("Irrelevant\n(len-matched)", "exp2_irrelevant_samelen_seed42.csv", MUTE),
         ("Random\ncontext", "exp2_random_context_seed42.csv", MUTE),
         ("Label\nshuffled", "exp2_label_shuffled_seed42.csv", MUTE),
@@ -90,7 +90,7 @@ def fig_controls():
     ax.set_xticks(x); ax.set_xticklabels(labels)
     ax.set_ylabel("Accuracy (%)")
     ax.set_ylim(40, 90)
-    ax.set_title("Memory-use controls: only informative memory helps")
+    ax.set_title("Memory-use controls: only injected answers help")
     for xi, a in zip(x, accs):
         ax.text(xi, a + max(his) + 1.5, f"{a:.1f}", ha="center", fontsize=9,
                 fontweight="bold")

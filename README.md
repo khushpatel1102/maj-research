@@ -226,58 +226,73 @@ Runs the original MAJ-only experiments at 100 and 1000 samples used in the Stage
 
 ## Key Results
 
-### Stage 2: Leakage-Free Ablation (GPT-4o, 80 test samples)
+All headline numbers are from the leakage-free, audited protocol (GPT-4o, seed 42,
+question-level split, frozen memory). Full details and all caveats are in the paper;
+per-sample records and audit files are in `results/`.
 
-| Mode | Accuracy | Mean latency |
-|------|----------|--------------|
-| Stateless | 65.0% | 3.7 s |
-| MAJ (self-written memory) | 63.7% | 4.9 s |
-| MCTS-Judge (no memory) | 62.5% | 48.7 s |
-| **MCTS-Judge + Memory** | **68.8%** | 40.3 s |
+### Clean-memory comparison (held-out n=80, question-clustered 95% CIs)
 
-The combined mode is the only one that beats stateless. Memory and tree search are individually insufficient but jointly productive.
+| Mode | Accuracy [95% CI] | Coverage |
+|------|-------------------|----------|
+| Stateless | 70.0 [62.5, 77.5] | 80/80 |
+| MAJ (self-written memory) | 65.0 [57.5, 72.5] | 80/80 |
+| MCTS-Judge (no memory) | 70.0 [60.0, 80.0] | 80/80 |
+| MCTS-Judge + Memory | 71.8 [63.7, 79.7] | 78/80 |
 
-### Self-written vs Oracle Memory
+No configuration significantly outperforms the stateless judge (paired McNemar +
+bootstrap; the design is powered for the conventional 6-10 point claim, not for
+few-point effects). An earlier claim that the combined mode beats stateless is
+withdrawn; it predated the audited protocol.
 
-| Memory provenance | MAJ | MCTS-Judge + Memory |
-|-------------------|-----|---------------------|
-| Self-written | 63.7% | 68.8% |
-| Oracle | 56.2% | 70.0% |
+### Context for absolute numbers
 
-### Poisoned Memory
+A response-length threshold alone scores **75.0%** on the held-out half (longer
+responses pass), above every configuration tested. Absolute accuracies on this
+benchmark partly reflect superficial cues; the paper's claims rest on paired
+mode-versus-mode comparisons only.
 
-| Poison rate | MAJ | MCTS-Judge + Memory |
-|-------------|-----|---------------------|
-| 0% (oracle) | 56.2% | 70.0% |
-| 10% | 55.0% | 45.0% |
-| 20% | 53.8% | 73.8% |
-| 50% | 58.8% | 21.2% |
+### Memory-use controls (answer-injection positive control)
 
-The system is robust at moderate corruption and collapses at 50 percent.
+| Injected memory | Accuracy |
+|-----------------|----------|
+| Stateless (none) | 66.2 |
+| **Answer injection (item's own verdict)** | **78.8** |
+| Random context | 65.0 |
+| Label-shuffled | 63.7 |
+| Irrelevant (length-matched) | 68.8 |
 
-### Reliability Harness (GPT-4o, 80-sample test set)
+The judge can use memory when it contains the answer; the benchmark's real
+memory carries no exploitable signal for this pipeline.
 
-**Stochastic stability** (verdict agreement on repeated calls):
+### Poisoning
 
-| Mode | Agreement |
-|------|-----------|
-| Stateless | 94.1% (16/17) |
-| MAJ | 95.0% (19/20) |
-| MCTS-Judge + Memory | 90.0% (18/20) |
+Under the corrected, audited harness, accuracy is flat across 10/20/50% label
+poisoning (MAJ 62-64%, MCTS+Memory 65-70%). An earlier "collapse to 21.2% at
+50% poisoning" was a harness artifact (network errors scored as wrong answers)
+and is withdrawn.
 
-**Label flip discriminative test** (verdict should flip on inverted response):
+### Grouped 5-fold cross-validation (all 160 items)
 
-| Mode | Correctly flipped |
-|------|-------------------|
-| Stateless | 65.0% (13/20) |
-| MAJ | 70.0% (14/20) |
-| MCTS-Judge + Memory | 65.0% (13/20) |
+MAJ-self vs stateless +0.6pp [-3.8, +5.0]; oracle -3.8pp [-7.5, 0.0];
+balanced-minus-self -0.6pp [-3.1, +1.3] (question-cluster bootstrap). The null
+holds at double the sample size.
 
-**Defense mechanism** (similarity-threshold filter on poisoned-50% memory):
+## Audit status
 
-| Configuration | Accuracy |
-|---------------|----------|
-| No defense | 68.8% |
-| With similarity filter (cosine ≥ 0.92) | 65.0% |
+The frozen-memory audit is two-layer: a SHA-256 fingerprint over the full stored
+graph state (v2: node labels + all properties + edge properties) and runtime
+write-blocking at both the wrapper-method and raw-Cypher level. Violations abort
+the run. `tests/test_audit_mutation.py` (7 tests) proves detection and prevention
+against a live Neo4j. The June runs were audited with the earlier v1 topology
+fingerprint; see the paper's Limitations for why v1 sufficed for the two modeled
+channels. Do not describe the protocol as "provably leakage-free"; the audit
+verifies state invariance and blocks in-process writes, no more.
 
-The filter does not help on this configuration; high run-to-run MCTS variance is documented as a threat to validity.
+## Provenance
+
+Everything reported is reproducible from repository commit `4787e06f4c28`
+(see `PROVENANCE.md`): per-sample predictions, splits (by seed), prompts,
+audit records, retrieval logs, and analyses. Dataset: `data/benchmark_df.csv`,
+SHA-256 `84886f7340df190b90d60777f22c7eedf1d3d29b9d18232e59d055d3e40d0c76`,
+obtained 2026-02, Apache-2.0. Neo4j: server 5.x Community (June runs; 5.26.28
+verification environment), Python driver `neo4j` 5.15.0.
