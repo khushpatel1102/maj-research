@@ -1,5 +1,5 @@
 """
-Round-3 reviewer analyses (no API calls; everything from data on disk).
+Supplementary analyses (no API calls; everything from data on disk).
 
 1. RESPONSE-LENGTH BASELINE
    Can pass/fail be predicted from response length alone? Threshold chosen on

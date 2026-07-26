@@ -1,5 +1,5 @@
 """
-Experiment 2 (Bader review, task 2): memory-use controls.
+Memory-use controls: an answer-injection positive control plus negative controls.
 
 Bracket the null from both sides. The audited result says memory does not help;
 this experiment proves that is a property of the BENCHMARK (memory is not
@@ -17,8 +17,8 @@ Negative controls (must match the no-memory / stateless baseline):
                           cheating-oracle block's token length.
 
 All arms route through build_judge_with_memory_prompt with the SAME template, so
-each arm differs from MAJ only in the injected block (reviewer fix: otherwise we
-would measure 'empty-context memory judge', not the stateless baseline).
+each arm differs from MAJ only in the injected block (otherwise the negative
+arms would measure an empty-context memory judge, not the stateless baseline).
 
 Manipulation check: per item we log whether the cheating arm flips the verdict
 relative to stateless, so a high cheating accuracy is attributable to memory use

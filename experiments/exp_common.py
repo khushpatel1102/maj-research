@@ -1,5 +1,5 @@
 """
-Shared infrastructure for the reviewer-requested experiments (Bader, round 2).
+Shared infrastructure for the revision experiments.
 
 Everything in this module is intentionally small, deterministic, and reused by
 every experiment script so the four experiments cannot drift apart in how they
@@ -278,8 +278,8 @@ def make_maj_predictor(model, gm):
 
 
 # ---------------------------------------------------------------------------
-# Class-conditional metrics (reviewer fix: row split is 44/36, not 40/40, so
-# raw accuracy across split types is confounded -- report balanced acc + recalls)
+# Class-conditional metrics: the row split is 44/36, not 40/40, so raw accuracy
+# across split types is confounded -- report balanced accuracy and per-class recall
 # ---------------------------------------------------------------------------
 
 def class_metrics(df) -> dict:
@@ -296,7 +296,7 @@ def class_metrics(df) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Token counting (reviewer fix: log realized memory token count, same encoder
+# Token counting (log the realized memory token count, same encoder
 # as the judge model, on the EXACT memory_context string the verdict used)
 # ---------------------------------------------------------------------------
 
@@ -323,8 +323,8 @@ def make_custom_context_predictor(model, build_context_fn):
     """build_context_fn(sample) -> (memory_context_str, extra_log_dict).
 
     Routes through build_judge_with_memory_prompt so the prompt TEMPLATE is
-    identical to MAJ; only the memory block content changes. This guarantees a
-    control's only difference from MAJ is the injected block (reviewer fix).
+    identical to MAJ; only the memory block content changes, so a control's only
+    difference from MAJ is the injected block.
     """
     import os
     from openai import OpenAI

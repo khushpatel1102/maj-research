@@ -1,4 +1,4 @@
-# Provenance Manifest (round-3 review)
+# Provenance Manifest
 
 **Repository commit for all reported results and the hardened audit:**
 `4787e06f4c28` on branch `experiments/bader-review-round2`
@@ -8,7 +8,7 @@
 - Primary series (seed 42): `results/leakage_free_{stateless,maj,mcts_judge,mcts_judge_memory}.csv`
 - Provenance conditions: `results/lf_oracle_*.csv`, `results/lf_poisoned_{10,20,50}_*.csv`, `results/lf_bare_maj.csv`
 - Multi-seed: `results/lf_*_seed{7,123}.csv`
-- Round-2 experiments: `results/exp1_*` (2x2), `results/exp2_*` (memory-use controls),
+- Revision experiments: `results/exp1_*` (2x2), `results/exp2_*` (memory-use controls),
   `results/exp3_cv_*` (grouped CV), `results/exp4_*` (leniency instrumentation)
 - Reliability harness: `results/harness_*.csv`
 
@@ -27,7 +27,7 @@ CV folds: `grouped_folds(questions, 5, seed=42)` in `experiments/exp3_grouped_cv
   (threshold-parametrized copy: `experiments/exp4_leniency_anchor.py::format_context`)
 - Control-arm injected blocks: `experiments/exp2_memory_controls.py`
 
-## Audit records (June runs; v1 topology-scope fingerprint)
+## Audit records (v1 topology-scope fingerprint)
 - `results/*_audit.json` (one per audited run: before/after snapshots + diff)
 - v1 hashes node identifiers + edge triples. The hardened v2 fingerprint
   (full stored state: labels + all properties + edge properties) ships at this
@@ -44,7 +44,7 @@ CV folds: `grouped_folds(questions, 5, seed=42)` in `experiments/exp3_grouped_cv
   property-flip and topology-edit detection via raw Cypher; wrapper- and
   driver-level write prevention under freeze; violation fatality; clean restore.
 
-## Round-3 analyses
+## Supplementary analyses
 - `experiments/round3_analyses.py` -> `results/round3_analyses.json`:
   response-length baseline, clustered TOST for negative controls,
   missing-output sensitivity bounds.

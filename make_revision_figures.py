@@ -1,5 +1,5 @@
 """
-Figures for the round-2 revision experiments, built from the per-sample CSVs in
+Figures for the revision experiments, built from the per-sample CSVs in
 results/ (nothing re-evaluated). Matches the visual style of make_figures.py.
 
 Outputs (to paper/figures/):

@@ -1,5 +1,5 @@
 """
-Experiment 1 (Bader review, task 1): the 2x2 leakage design.
+The 2x2 leakage design: {row, question} split x {write-back, frozen} memory.
 
 Crosses two binary factors that each correspond to ONE leakage channel:
 
@@ -127,7 +127,7 @@ def run_cell(name, split_fn, writeback, df, model, seed, results_dir):
     cm = E.class_metrics(res)
     res.to_csv(results_dir / f"{tag}_seed{seed}.csv", index=False)
     grew = not audit["diff"]["identical"]
-    # Reviewer fix: frozen cells MUST be byte-identical before/after; hard-fail otherwise.
+    # Frozen cells must be byte-identical before/after; flag loudly otherwise.
     if not writeback and grew:
         print(f"    !! AUDIT VIOLATION: frozen cell {name} mutated memory; "
               f"node_delta={audit['diff']['node_delta']}")
@@ -175,7 +175,7 @@ def main():
               f"{r['pass_recall']:>6.1f}%{r['fail_recall']:>6.1f}%{r['n']:>5}"
               f"{str(r['memory_grew']):>7}")
     if base:
-        # Reviewer self-test: clean cell (A) should reproduce published MAJ ~65.0%
+        # Self-test: the clean cell (A) should reproduce the published MAJ number
         # (only meaningful on a full, non-limited gpt-4o run).
         if not args.limit and args.model.startswith("gpt-4o") and "mini" not in args.model:
             if abs(base["acc"] - 65.0) > 6.0:

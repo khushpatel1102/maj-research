@@ -74,7 +74,7 @@ We verify it. Our contributions are:
 \begin{enumerate}
     \item \textbf{A protocol that verifies the absence of memory mutation instead of assuming it} (\S\ref{sec:protocol}): split the benchmark by question so paired pass/fail items never straddle the split, freeze memory during evaluation, and verify the freeze with a two-layer audit (a SHA-256 fingerprint over the full stored graph state, every node's labels and properties and every edge, taken before and after evaluation, plus runtime write-blocking at both the wrapper-method and raw-Cypher level). The audit is mechanical: a hash either matches or it does not.
     \item \textbf{A corrective null result} (\S\ref{sec:results}). Under the audited protocol, none of our memory or tree-search configurations significantly beats the stateless GPT-4o judge: not with the judge's own memory, not with oracle (ground-truth) memory, not with a simpler schema, not on other random seeds. The audit also caught a real write-back leakage bug in our own evaluation path on its first run, and a corrected harness showed that an apparent collapse to 21.2\% accuracy under 50\% memory poisoning was caused by network errors being scored as wrong answers.
-    \item \textbf{A mechanistic explanation of the null} (\S\ref{sec:analysis}). We read the per-item verdicts instead of stopping at aggregate accuracy. Memory leaves 90\% of verdicts unchanged, and the verdicts it does change flip mostly toward ``pass'' and are mostly wrong: the changed verdicts skew toward ``pass,'' consistent with a leniency-anchoring account rather than with memory contributing evidence, and in line with the documented sensitivity of LLMs to the content and order of in-context exemplars \citep{lu2022fantastically, zhao2021calibrate}; we treat this as a hypothesis, and the balanced-retrieval test below neither confirms nor refutes it as the cause of the null. We formalize this with a Bayes-ceiling argument: memory can raise the achievable accuracy only insofar as the conditional label distribution $P(Y\mid X,M)$ differs from $P(Y\mid X)$, which the leakage-free protocol is designed to hold close to equality, while the separate channel of stabilizing the realized (stochastic) judge has at most the judge's measured 5--10\% self-disagreement to work with. The same account predicts when memory \emph{should} help and yields concrete fixes: balanced contrastive retrieval, similarity-gated injection, and population-level calibration.
+    \item \textbf{A mechanistic explanation of the null} (\S\ref{sec:analysis}). We read the per-item verdicts instead of stopping at aggregate accuracy. Memory leaves 90\% of verdicts unchanged, and the verdicts it does change flip mostly toward ``pass'' and are mostly wrong: the changed verdicts skew toward ``pass,'' consistent with a leniency-anchoring account rather than with memory contributing evidence, and in line with the documented sensitivity of LLMs to the content and order of in-context exemplars \citep{lu2022fantastically, zhao2021calibrate}; we treat this as a hypothesis, and the balanced-retrieval test below neither confirms nor refutes it as the cause of the null. We formalize this with a Bayes-ceiling argument: memory can raise the achievable accuracy only insofar as the conditional label distribution $P(Y\mid X,M)$ differs from $P(Y\mid X)$, which the leakage-free protocol is designed to hold close to equality, while the separate channel of stabilizing the realized (stochastic) judge has at most the judge's measured 5--10\% self-disagreement to work with. The same account predicts when memory \emph{should} help and yields concrete fixes.
 \end{enumerate}
 
 \section{Related Work}
@@ -137,38 +137,8 @@ Two rules. \textbf{Split by question, not by row}: unique questions are shuffled
 
 \subsection{The two-layer audit}
 
-A stated freeze is a claim, not a proof. We require the proof, per run (Figure~\ref{fig:audit}).
+A stated freeze is a claim, not a proof. We require the proof, per run.
 
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[
-  font=\small,
-  astep/.style={draw, rounded corners=3pt, align=center, inner sep=5pt,
-               minimum width=6.9cm, thick},
-  rel/.style={-{Stealth[length=2.4mm]}, thick, gray!40!black},
-  node distance=0.4cm
-]
-\node[astep, draw=gray!60!black, fill=gray!5] (build)
-  {\textbf{Build memory} \ {\scriptsize(once, before evaluation)}};
-\node[astep, draw=blue!55!black, fill=blue!5, below=of build] (before)
-  {\textbf{Snapshot} $S_{\text{before}}$\\[-1pt]
-   {\scriptsize per-type node/edge counts + SHA-256 fingerprint}};
-\node[astep, draw=purple!55!black, fill=purple!5, below=of before] (eval)
-  {\textbf{Evaluate 80 held-out items}\\[-1pt]
-   {\scriptsize every graph write intercepted $\rightarrow$ \texttt{FrozenMemoryViolation}}};
-\node[astep, draw=blue!55!black, fill=blue!5, below=of eval] (after)
-  {\textbf{Snapshot} $S_{\text{after}}$};
-\node[astep, draw=green!45!black, fill=green!7, below=of after] (verdict)
-  {\textbf{Accept iff} $S_{\text{before}} = S_{\text{after}}$ \textbf{and} no write attempted\\[-1pt]
-   {\scriptsize otherwise the run is rejected; audit record written per run}};
-\draw[rel] (build)  -- (before);
-\draw[rel] (before) -- (eval);
-\draw[rel] (eval)   -- (after);
-\draw[rel] (after)  -- (verdict);
-\end{tikzpicture}
-\caption{The two-layer frozen-memory audit. Layer 1 (snapshots) detects any mutation after the fact; layer 2 (write interception) prevents it during the run. A run is accepted only if both layers pass.}
-\label{fig:audit}
-\end{figure}
 
 \textbf{Layer 1, after the fact:} immediately before and after evaluation, take a deterministic snapshot of the graph: per-type node and edge counts, plus a SHA-256 fingerprint over the full stored state (every node's identifier, labels, and complete property map, embeddings included, and every edge triple with its properties). An in-place property edit, not only a node or edge change, alters the fingerprint. Accept the run only if the counts and fingerprints match exactly. The before/after record is written to a per-run audit file.
 
@@ -215,19 +185,13 @@ MCTS-J.+Mem. & 71.8 [63.7, 79.7] & 78 & 33.3\,s \\
 \label{tab:clean}
 \end{table}
 
-Table~\ref{tab:clean} shows the central result: no configuration outperforms the stateless baseline. MAJ vs.\ stateless is $-5.0$ points (bootstrap CI $[-12.5, +1.3]$, McNemar $p{=}0.29$); MCTS-Judge vs.\ stateless is exactly $0.0$; MCTS-Judge+Memory vs.\ stateless is $+1.8$ ($p{=}0.80$). Every confidence interval in Table~\ref{tab:clean} overlaps the baseline; every paired difference crosses zero (Figure~\ref{fig:deltas}). The 6--10 point gain from the conventional protocol is gone. We changed the measurement, not the system.
+Table~\ref{tab:clean} shows the central result: no configuration outperforms the stateless baseline. MAJ vs.\ stateless is $-5.0$ points (bootstrap CI $[-12.5, +1.3]$, McNemar $p{=}0.29$); MCTS-Judge vs.\ stateless is exactly $0.0$; MCTS-Judge+Memory vs.\ stateless is $+1.8$ ($p{=}0.80$). Every confidence interval in Table~\ref{tab:clean} overlaps the baseline, and every paired bootstrap interval on a mode-versus-mode difference crosses zero. The 6--10 point gain from the conventional protocol is gone. We changed the measurement, not the system.
 
 \subsection{A response-length shortcut}
 \label{sec:length}
 
 Response length alone is a strong predictor on this benchmark: a single length threshold chosen on the memory half scores 75.0\% on the held-out half (longer responses pass), and the stateless judge's verdicts correlate with length (point-biserial $r{=}0.27$). No configuration we tested, memory-augmented or not, beats this superficial baseline; length bias in LLM judges and shortcut artifacts in benchmarks are both well documented \citep{dubois2024length, gururangan2018annotation}. This puts the absolute accuracies in context; the paper's claims rest on the paired mode-versus-mode comparisons, not on absolute levels.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.72\linewidth]{figures/paired_deltas.png}
-\caption{Paired mode-versus-mode accuracy differences with bootstrap 95\% CIs; every clean-memory interval crosses zero.}
-\label{fig:deltas}
-\end{figure}
 
 \subsection{Oracle memory, schema ablation, seeds}
 
@@ -261,23 +225,9 @@ Our earlier, un-audited harness reported that MCTS-Judge+Memory collapsed to 21.
 \subsection{Bracketing the null: can the judge use memory at all?}
 \label{sec:controls}
 
-Table~\ref{tab:baselines} maps each run series to its stateless baseline and the sections that use it. The experiments in this and the following two subsections are a later, independent run, so their stateless baseline is 66.2--68.1\% rather than the 70.0\% of the primary series.
+Three run series appear in this paper, each with its own stateless baseline (primary series 70.0\%, \S\ref{sec:results}; the later instrumented run 66.2\%, this section and \S\ref{sec:channels}; grouped CV 68.1\%, \S\ref{sec:cv}).
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{lcl}
-\toprule
-Run series & Stateless & Used in \\
-\midrule
-Primary audited series (seed 42) & 70.0 & clean memory, ablations, poisoning (\S\ref{sec:results}) \\
-Later instrumented run (seed 42) & 66.2 & controls (\S\ref{sec:controls}), $2\times2$ (\S\ref{sec:channels}), \S\ref{sec:flips} thresholds \\
-Grouped five-fold CV & 68.1 & cross-validation (\S\ref{sec:cv}), all 160 items \\
-\bottomrule
-\end{tabular}
-\caption{Which stateless baseline belongs to which experiment series. Baselines differ by run inside the documented cross-seed band; every claim is a paired comparison within one series, never across series.}
-\label{tab:baselines}
-\end{table} That $\approx4$-point drift is expected rather than anomalous: it sits inside the $\approx5$-point cross-seed band reported in \S\ref{sec:results}. The baseline varies by a few points between runs, and so does every mode measured against it, which is why each comparison below is a \emph{paired} test on identical items rather than a difference of two headline numbers.
+The $\approx4$-point baseline drift sits inside the cross-seed band of \S\ref{sec:results}; every comparison below is therefore a \emph{paired} test on identical items, never a difference of two headline numbers.
 
 A null result invites an uninteresting explanation: perhaps the judge simply cannot read retrieved memory, so \emph{no} memory content would ever move its verdict. We rule this out with a memory-use control experiment. Holding the prompt template fixed, we replace the retrieved block with (i) an \emph{answer-injection positive control}: the test item's own ground-truth verdict injected as an exemplar; and three negative controls: (ii) a random unrelated attempt, (iii) label-shuffled exemplars, and (iv) a topically irrelevant block token-matched to the injected block. All four route through the identical memory prompt, so any accuracy change is attributable to the injected content alone.
 
@@ -354,11 +304,11 @@ Row $\times$ write-back (both) & 66.8 & $+0.5$ \\
 \label{tab:channels}
 \end{table}
 
-The result (Table~\ref{tab:channels}) is instructive and contrary to our initial expectation: \emph{neither structurally isolatable channel reproduces the conventional gain}. Paired-item leakage moves balanced accuracy $-2.9$ points (the larger raw drop is mostly the $44/36$ class imbalance the row split induces), and write-back alone is $+1.2$. We therefore do not claim the conventional gain was manufactured by these two clean channels. The most consistent explanation is that the original observation arose under a protocol that interleaved memory-building with evaluation, a stronger compound leak than either channel in isolation, and/or was inflated by sampling noise. What survives is the operational point the paper is built on: the apparent gain does not survive any clean, audited re-measurement.
+The result (Table~\ref{tab:channels}) is instructive and contrary to our initial expectation: \emph{neither structurally isolatable channel reproduces the conventional gain}. Paired-item leakage moves balanced accuracy $-2.9$ points (the larger raw drop is mostly the $44/36$ class imbalance the row split induces), and write-back alone is $+1.2$. We therefore do not claim the conventional gain was manufactured by these two clean channels. The most consistent explanation is that the original observation arose under a protocol that interleaved memory-building with evaluation, a stronger compound leak than either channel in isolation, and/or was inflated by sampling noise. What survives is the operational point: the apparent gain does not survive any clean, audited re-measurement.
 
 \subsection{Reliability harness}
 
-Accuracy is one number; three further probes characterize the judge along other axes. \emph{Stochastic stability}: judge the same item twice and stateless agrees with itself 94\%, MAJ 95\%, MCTS-Judge+Memory 90\%. \emph{Label-flip discrimination}: rewrite a response to invert its ground truth and verdicts flip correctly 65--70\% of the time, similarly across modes. \emph{Defense filter}: a similarity-threshold filter on retrieval under 50\%-poisoned memory does not help (65.0\% vs.\ 64.8\%), an honest negative for that defense. The stability numbers matter below: a judge that already agrees with itself 90--95\% of the time leaves memory very little noise to correct.
+Three further probes: judging the same item twice, stateless agrees with itself 94\%, MAJ 95\%, MCTS-Judge+Memory 90\% (\emph{stability}); rewriting a response to invert its ground truth flips the verdict correctly 65--70\% of the time across modes (\emph{discrimination}); and a similarity-threshold filter under 50\%-poisoned memory does not help (65.0\% vs.\ 64.8\%), an honest negative. The stability numbers matter below: a judge that agrees with itself 90--95\% of the time leaves memory little noise to correct.
 
 \section{Analysis: Why Memory Neither Helped nor Harmed}
 \label{sec:analysis}
@@ -404,10 +354,10 @@ Assume $(X, M, Y)$ has a well-defined joint distribution and that $A^*$ is evalu
 \[
 A^*(X,M) - A^*(X) \;=\; \mathbb{E}_{X,M}\!\big[\max_y P(Y{=}y\mid X,M)\big] - \mathbb{E}_{X}\!\big[\max_y P(Y{=}y\mid X)\big],
 \]
-with equality if and only if, for almost every $(X,M)$, some class that is most probable given $X$ alone remains most probable given $(X,M)$; in particular, equality holds whenever $Y \perp M \mid X$.
+with equality if and only if there is a measurable selection $y^{*}(X) \in \arg\max_y P(Y{=}y\mid X)$ that remains optimal given $(X,M)$ almost surely. (A class that merely ties given $X$ does not suffice: if $M$ breaks the tie, the inequality is strict.) In particular, equality holds whenever $Y \perp M \mid X$.
 \end{proposition}
 
-This is a standard consequence of the comparison of statistical experiments \citep{blackwell1951, blackwell1953}; we state it for orientation, not as a new result. In words: memory can raise the \emph{achievable} accuracy only to the extent that the conditional label distribution given $(X,M)$ differs from the one given $X$ alone; if memory is conditionally uninformative about the label, the Bayes-optimal accuracy is unchanged regardless of the decision rule.
+This is a standard consequence of the comparison of statistical experiments \citep{blackwell1951, blackwell1953}, stated for orientation, not as a new result: memory can raise the \emph{achievable} accuracy only insofar as the label posterior given $(X,M)$ differs from the one given $X$ alone.
 
 \emph{Is $M$ conditionally informative here?} The protocol is built to make $P(Y\mid X,M)\approx P(Y\mid X)$: the question-level split guarantees no retrieved item concerns the test question, the rubric is fully specified inside $X$, and graded financial QA sits within GPT-4o's parametric competence, so a neighboring question's verdict shifts the posterior negligibly. The oracle experiment probes this: if the deployed judge extracted label evidence from retrieved memory, oracle memory should raise its accuracy; instead it is worth nothing ($-5.0$ and $-6.6$ points, n.s.). This shows that \emph{this} retriever, prompt, and judge do not exploit the information; it does not establish that the memory carries none, and a different pipeline might exploit signal this one ignores.
 
@@ -422,7 +372,6 @@ and the decomposition in \S\ref{sec:flips} measures $q = 2/8$ for MAJ. When $M$ 
 \subsection{Practical remedies, and when memory should help}
 \label{sec:remedies}
 
-The account above is constructive; it identifies the available levers.
 
 \paragraph{(a) Balance the contrastive signal.} The leniency tilt is a property of the retrieval design, not of memory per se. Symmetric thresholds, or enforcing equal numbers of passing and failing exemplars in the context block, remove the systematic push toward ``pass'' that produced MAJ's $-5.0$. This is a minimal, directly testable change.
 
@@ -434,7 +383,7 @@ The account above is constructive; it identifies the available levers.
 
 \section{Conclusion}
 
-We asked when persistent memory helps an LLM judge, and we required an answer whose measurement could be independently checked. The protocol (question-level partition, frozen memory, a two-layer cryptographic audit) verifies per run that the stored memory state did not change, and it caught a real leakage defect in our own code on its first application. Under this protocol the answer, for GPT-4o on this benchmark, is that no benefit is measurable: neither memory nor tree search outperforms the stateless judge, and an apparent 6--10 point gain did not survive audited re-measurement, and an apparent poisoning collapse was traced directly to a harness defect. The per-item analysis supports a simple reading: under the leakage-free protocol memory appears to move the conditional label distribution very little, so the Bayes-achievable gain is small, while the separate route of stabilizing the stochastic judge has only its 5--10\% self-disagreement to exploit; the few verdicts memory does change skew toward ``pass,'' consistent with a leniency-anchoring account; rebalancing the retrieval removes the skew's proximate cause without a reliable accuracy change. The general lesson is that both the promise and the fragility of judge memory, as commonly measured, are properties of the harness: trustworthy claims about memory-augmented judging require audited measurement first. We release the protocol, audit, per-sample records, and a one-command reproduction script so the practice can be adopted directly.
+We asked when persistent memory helps an LLM judge, and we required an answer whose measurement could be independently checked. The protocol (question-level partition, frozen memory, a two-layer audit) verifies per run that the stored memory state did not change, and it caught a real leakage defect in our own code on its first application. Under it, for GPT-4o on this benchmark, no benefit is measurable: neither memory nor tree search outperforms the stateless judge, the apparent 6--10 point gain did not survive audited re-measurement, and the apparent poisoning collapse was a harness defect. The per-item analysis supports a simple reading: under the leakage-free protocol memory appears to move the conditional label distribution very little, so the Bayes-achievable gain is small, while the separate route of stabilizing the stochastic judge has only its 5--10\% self-disagreement to exploit; the few verdicts memory does change skew toward ``pass,'' consistent with a leniency-anchoring account; rebalancing the retrieval removes the skew's proximate cause without a reliable accuracy change. The general lesson is that both the promise and the fragility of judge memory, as commonly measured, are properties of the harness: trustworthy claims about memory-augmented judging require audited measurement first. We release the protocol, audit, per-sample records, and a one-command reproduction script so the practice can be adopted directly.
 
 \section*{Limitations}
 
@@ -447,32 +396,6 @@ This work was carried out at Innopolis University. We thank the EvalsBench autho
 
 \appendix
 
-\section{Audit Record Format}
-Each run emits a machine-readable record holding the before/after snapshots (per-type node and relationship counts, total counts, and a SHA-256 fingerprint: v2 hashes the full stored state including all node properties; the v1 records for the reported runs hash node identifiers and edge triples) and their diff. A run is leakage-free only if the diff is empty and the fingerprints match; records are released with the code.
-
-\section{The Assembled Memory Prompt}
-\label{app:prompt}
-
-The retrieved memory block below is the exact structure produced by the retrieval pipeline (excerpts shortened). It is prepended to the task, rubric, and candidate response; the anti-anchoring warning at the top is part of the published prompt. Despite occupying roughly half the prompt, this block changes only 10\% of verdicts (\S\ref{sec:flips}).
-
-\begin{quote}\small\ttfamily
-IMPORTANT: These are REFERENCE examples only. Each case is UNIQUE.\\
-Do NOT assume this case will have the same outcome as similar past cases.\\
-Judge THIS response on its OWN merits against the grading criteria.\\[4pt]
-SUCCESSFUL EXAMPLES (similar responses that passed):\\
-\ 1. [similarity: 91\%] Response excerpt: ``DCF projects future cash flows at a stage-appropriate discount rate...''\\
-\ \ \ \ Why it passed: ``covers all three methods, names the discount-rate trade-off.''\\[4pt]
-FAILED EXAMPLES (similar responses that failed - check if same issue applies):\\
-\ 1. [similarity: 93\%] Response excerpt: ``Pre-money valuation is the value of the company before investment...''\\
-\ \ \ \ Why it failed: ``tautological; never names a method.''\\[4pt]
-PAST ISSUES (only flag if SPECIFICALLY present in this response):\\
-\ 1. [similarity: 91\%] ``missed discount-rate justification''\\[4pt]
-PATTERNS TO CHECK (warnings only - NOT automatic failures):\\
-\ 1. incomplete-methodology [similarity: 90\%]
-\end{quote}
-
-The leniency mechanism of \S\ref{sec:flips} is visible in this structure: the passing exemplars clear the lower 0.85 threshold more often than failing exemplars clear 0.92, so the block above typically contains more ``successful'' than ``failed'' entries.
-
 \section{Experiment--Artifact Manifest}
 \label{app:manifest}
 
@@ -480,22 +403,22 @@ All artifacts live at repository commit \texttt{4787e06f4c28}.
 
 \begin{table}[h]
 \centering
-\small
+\footnotesize
 \begin{tabular}{lll}
 \toprule
 Experiment & Driver script & Per-item records / audits \\
 \midrule
-Primary series (clean, oracle, poison) & \texttt{benchmark\_leakage\_free.py} & \texttt{results/leakage\_free\_*, lf\_*} + \texttt{*\_audit.json} \\
-Multi-seed replication & same, \texttt{--seed} & \texttt{results/lf\_*\_seed\{7,123\}*} \\
-Memory-use controls & \texttt{experiments/exp2\_memory\_controls.py} & \texttt{results/exp2\_*} \\
-$2\times2$ leakage decomposition & \texttt{experiments/exp1\_2x2\_leakage.py} & \texttt{results/exp1\_*} (+dose logs) \\
-Grouped five-fold CV & \texttt{experiments/exp3\_grouped\_cv.py} & \texttt{results/exp3\_cv\_*} \\
-Threshold (leniency) test & \texttt{experiments/exp4\_leniency\_anchor.py} & \texttt{results/exp4\_*} (retrieval logs) \\
-Length / equivalence / sensitivity & \texttt{experiments/round3\_analyses.py} & \texttt{results/round3\_analyses.json} \\
-Audit mutation tests & \texttt{tests/test\_audit\_mutation.py} & 7/7 passing at the commit above \\
+Primary series (clean, oracle, poison) & \texttt{benchmark\_leakage\_free.py} & \texttt{leakage\_free\_*}, \texttt{lf\_*}, audits \\
+Multi-seed replication & same, \texttt{--seed} & \texttt{lf\_*\_seed\{7,123\}*} \\
+Memory-use controls & \texttt{exp2\_memory\_controls.py} & \texttt{exp2\_*} \\
+$2\times2$ leakage decomposition & \texttt{exp1\_2x2\_leakage.py} & \texttt{exp1\_*} (+dose logs) \\
+Grouped five-fold CV & \texttt{exp3\_grouped\_cv.py} & \texttt{exp3\_cv\_*} \\
+Threshold (leniency) test & \texttt{exp4\_leniency\_anchor.py} & \texttt{exp4\_*} (retrieval logs) \\
+Length / equivalence / sensitivity & \texttt{round3\_analyses.py} & \texttt{round3\_analyses.json} \\
+Audit mutation tests & \texttt{test\_audit\_mutation.py} & 7/7 passing at the commit above \\
 \bottomrule
 \end{tabular}
-\caption{Map from every reported experiment to its driver script and released artifacts. Splits are reproduced by seed (Appendix~\ref{app:config}); prompts are in \texttt{src/prompts.py}.}
+\caption{Map from every reported experiment to its driver script and released artifacts. Scripts live under \texttt{experiments/} (primary series at the repository root; mutation tests under \texttt{tests/}); per-item records under \texttt{results/}. Splits are reproduced by seed (Appendix~\ref{app:config}); prompts are in \texttt{src/prompts.py}. Each audited run also emits a machine-readable record with the before/after snapshots (per-type counts and state fingerprint) and their diff; a run is leakage-free only if the diff is empty and the fingerprints match.}
 \label{tab:manifest}
 \end{table}
 
@@ -504,13 +427,13 @@ Audit mutation tests & \texttt{tests/test\_audit\_mutation.py} & 7/7 passing at 
 
 \begin{table}[h]
 \centering
-\small
-\begin{tabular}{ll}
+\footnotesize
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.68\linewidth}}
 \toprule
 Parameter & Value \\
 \midrule
 Judge model & GPT-4o (pinned API version) \\
-Graph store & Neo4j Community server 5.x (June runs); 5.26.28 (verification env); Python driver \texttt{neo4j} 5.15.0 \\
+Graph store & Neo4j Community server 5.x (June runs); 5.26.28 (verification environment); Python driver \texttt{neo4j} 5.15.0 \\
 Dataset file & \texttt{benchmark\_df.csv}, SHA-256 \texttt{84886f73\ldots0c76}, obtained 2026-02, Apache-2.0 \\
 Embeddings & text-embedding-ada-002, 1536-d, HNSW index \\
 Retrieval top-$k$ & attempts 3 (per class), issues 5, semantic patterns 3 \\

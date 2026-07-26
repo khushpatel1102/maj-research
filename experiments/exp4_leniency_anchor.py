@@ -1,18 +1,18 @@
 """
-Experiment 4 (Bader review, task 4): test the leniency-anchor explanation.
+Leniency-anchor test: per-item retrieval instrumentation and a symmetric-threshold comparison.
 
 The paper claims memory acts as a *leniency anchor*: the asymmetric retrieval
 thresholds (positive >= 0.85, negative >= 0.92) admit more passing than failing
 exemplars, tilting the judge toward "pass" and degrading fail-class accuracy.
 
-This script does two things the review demanded:
+This script does two things:
 
 1. PER-ITEM INSTRUMENTATION on the published (asymmetric) MAJ path. For every
    test item it logs, from the SAME retrieval the verdict used: pre/post
    threshold pos & neg counts, the similarity of each retrieved exemplar, the
    top-1 retrieved label, the realized memory token count, the stateless
    verdict, the MAJ verdict, whether it flipped, and the flip direction.
-   (Reviewer fix: logs must come from the same objects the verdict saw.)
+   (The logs come from the same retrieval objects the verdict used.)
 
 2. THE CAUSAL MANIPULATION. The asymmetry lives in the THRESHOLDS, not the
    counts (negatives are already capped to len(pos)+1 in the published code).
@@ -153,8 +153,8 @@ def main():
     gm = GraphManager()
     gm.clear_all()
     # ONE self-written memory, reused by asymmetric AND symmetric so the only
-    # difference between the two conditions is the threshold (reviewer fix:
-    # avoid comparing on two different LLM-built graphs).
+    # difference between the two conditions is the threshold, not two
+    # different LLM-built graphs.
     E.build_self_written_memory(train_df, gm, args.model)
 
     # 1) stateless baseline first, to anchor flip analysis + class-conditional gap

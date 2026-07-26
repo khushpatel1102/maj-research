@@ -1,5 +1,5 @@
 """
-Experiment 3 (Bader review, task 3): grouped cross-validation for reliability.
+Grouped five-fold cross-validation at the question level.
 
 5-fold grouped CV at the QUESTION level (80 questions -> 5 folds of 16 test
 questions; memory built on the other 64 questions = 128 rows). Both pass/fail
@@ -9,7 +9,7 @@ so each fold is leakage-free.
 Primary modes only (NO MCTS): stateless, MAJ(self/asymmetric), MAJ(oracle),
 MAJ(balanced/symmetric-thresholds).
 
-Reviewer fixes applied:
+Design notes:
 * Self-written memory is built ONCE per fold and reused for asymmetric AND
   symmetric retrieval, so the asymmetric-vs-balanced contrast is a pure
   retrieval-policy effect, not LLM-build noise.

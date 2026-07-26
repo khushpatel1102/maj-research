@@ -1,8 +1,8 @@
 """
-Mutation tests for the frozen-memory audit (round-3 review).
+Mutation tests for the frozen-memory audit.
 
 These tests prove, against a live Neo4j, that the hardened audit detects or
-blocks every mutation class the reviewer identified:
+blocks every mutation class it must handle:
 
   1. In-place PROPERTY mutation via raw Cypher (bypassing all wrapper
      methods) changes the full-state fingerprint.        [detection]
@@ -51,7 +51,7 @@ def gm():
 
 def test_property_mutation_changes_fingerprint(gm):
     """Flipping a stored label IN PLACE (no topology change) must change
-    the fingerprint. This was the reviewer's core gap: the old topology
+    the fingerprint. The old topology-only
     fingerprint passed this mutation."""
     before = gm.snapshot()
     with gm.driver.session() as s:
@@ -79,7 +79,7 @@ def test_wrapper_write_raises_under_freeze(gm):
 
 
 def test_raw_driver_write_raises_under_freeze(gm):
-    """The reviewer's bypass: code holding gm.driver issues raw write
+    """The driver bypass: code holding gm.driver issues raw write
     Cypher. Under the hardened freeze this must raise, not silently write."""
     with gm.freeze():
         with pytest.raises(FrozenMemoryViolation):
