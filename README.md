@@ -1,6 +1,6 @@
 # MCTS-MAJ: Memory-Augmented LLM-as-a-Judge with Monte Carlo Tree Search
 
-This repository accompanies the bachelor's thesis "MCTS-MAJ: Memory-Augmented LLM-as-a-Judge with Monte Carlo Tree Search" (Khush Patel, supervised by Professor Bader Rasheed, Innopolis University, 2026). It contains the full implementation, all benchmark scripts, and the per-sample result files for every experiment reported in the thesis.
+This repository accompanies the bachelor's thesis "MCTS-MAJ: Memory-Augmented LLM-as-a-Judge with Monte Carlo Tree Search" (Khush Patel, supervised by Professor Bader Rasheed, Innopolis University, 2026). It contains the full implementation, all benchmark scripts, and the per-sample result files for every experiment reported in the thesis and in the workshop paper "When Does Memory Help an LLM Judge? A Leakage-Free, Audited Evaluation of Memory-Augmented Judging" (submitted to ELMKE at ISWC 2026).
 
 ---
 
@@ -51,6 +51,7 @@ src/
   mcts_pipeline.py     # Composition wrappers for the six evaluation modes
 
 tests/
+  test_audit_mutation.py   # Proves the frozen-memory audit detects/blocks mutations
   test_pipeline.py
   test_organic_memory.py
   test_memory_comparison.py
@@ -70,6 +71,8 @@ results/
   harness_label_flip.csv          # Reliability harness: label flip discriminative
   harness_defense_{off,on}.csv    # Reliability harness: defense mechanism
   results_*.csv                   # Earlier (pre-leakage-fix) Stage 2 results
+  exp1_* exp2_* exp3_* exp4_*     # Revision experiments (2x2, controls, CV, thresholds)
+  round3_analyses.json            # Length baseline, equivalence, sensitivity
 
 reports/
   MAJ_Research_Progress_Report.pdf
@@ -80,6 +83,22 @@ thesis/
   chapter4_implementation.{tex,pdf}
   additional_achievement.{tex,pdf}
   references.bib
+
+experiments/
+  exp_common.py             # Shared splits, memory builders, audited eval loop
+  exp1_2x2_leakage.py       # 2x2 leakage decomposition (split x write-back)
+  exp2_memory_controls.py   # Answer-injection positive control + negative controls
+  exp3_grouped_cv.py        # Grouped five-fold cross-validation
+  exp4_leniency_anchor.py   # Per-item retrieval logging + symmetric-threshold test
+  round3_analyses.py        # Length baseline, clustered equivalence, sensitivity
+
+paper/
+  paper_ceur.tex            # Workshop paper source (CEUR single-column)
+  references.bib
+  figures/
+
+PROVENANCE.md               # Commit-pinned map of predictions, splits, prompts,
+                            # audit records, and retrieval logs
 
 benchmark_mcts.py             # Stage 2 runner: six modes on a configurable sample size
 benchmark_leakage_free.py     # Leakage-free runner: question-level split, frozen memory,
@@ -217,6 +236,18 @@ python experiments_harness.py --experiment stability --skip_build --n_subset 20
 python experiments_harness.py --experiment flip --skip_build --n_subset 20
 python experiments_harness.py --experiment defense
 ```
+
+### Revision experiments (workshop paper)
+
+```bash
+python experiments/exp1_2x2_leakage.py     --model gpt-4o --seed 42
+python experiments/exp2_memory_controls.py --model gpt-4o --seed 42
+python experiments/exp3_grouped_cv.py      --model gpt-4o --seed 42
+python experiments/exp4_leniency_anchor.py --model gpt-4o --seed 42
+python experiments/round3_analyses.py   # no API calls; reads results/ only
+```
+
+Each writes per-sample CSVs (and audit records where applicable) to `results/`.
 
 ### benchmark_evalsbench.py / benchmark_evalsbench_v2.py (Stage 1, MAJ-only)
 
